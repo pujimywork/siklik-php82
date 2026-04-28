@@ -6,9 +6,10 @@ use Livewire\WithPagination;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Illuminate\Support\Facades\DB;
+use App\Http\Traits\BPJS\PcareTrait;
 
 new class extends Component {
-    use WithPagination;
+    use WithPagination, PcareTrait;
 
     /* ===============================
      | Filter & Pagination
@@ -42,6 +43,68 @@ new class extends Component {
     public function requestDelete(string $drId): void
     {
         $this->dispatch('master.dokter.requestDelete', drId: $drId);
+    }
+
+    /* ===============================
+     | Sync dokter BPJS PCare — auto-fill kd_dr_bpjs
+     | Match by dr_name (case-insensitive substring).
+     =============================== */
+    public function syncBpjs(): void
+    {
+        try {
+            $response = $this->getDokter(0, 200)->getOriginalContent();
+            $code = $response['metadata']['code'] ?? 0;
+            $msg  = $response['metadata']['message'] ?? '';
+
+            if ($code != 200) {
+                $this->dispatch('toast', type: 'error',
+                    message: 'BPJS getDokter gagal: ' . $msg, title: 'BPJS Error');
+                return;
+            }
+
+            $bpjsList = $response['response']['list'] ?? $response['response'] ?? [];
+            if (!is_array($bpjsList) || empty($bpjsList)) {
+                $this->dispatch('toast', type: 'warning',
+                    message: 'Daftar dokter BPJS kosong.', title: 'BPJS');
+                return;
+            }
+
+            $localDokters = DB::table('rsmst_doctors')->select('dr_id', 'dr_name', 'kd_dr_bpjs')->get();
+            $matched = 0;
+            $skipped = 0;
+
+            foreach ($bpjsList as $bpjs) {
+                $bpjsKode = $bpjs['kdDokter'] ?? $bpjs['kode']  ?? null;
+                $bpjsName = $bpjs['nmDokter'] ?? $bpjs['nama']  ?? null;
+                if (!$bpjsKode || !$bpjsName) continue;
+
+                $bpjsUp = mb_strtoupper(trim($bpjsName));
+                $localMatches = $localDokters->filter(fn($d) =>
+                    str_contains(mb_strtoupper($d->dr_name ?? ''), $bpjsUp) ||
+                    str_contains($bpjsUp, mb_strtoupper($d->dr_name ?? ''))
+                );
+
+                if ($localMatches->count() === 1) {
+                    $local = $localMatches->first();
+                    if ($local->kd_dr_bpjs !== $bpjsKode) {
+                        DB::table('rsmst_doctors')
+                            ->where('dr_id', $local->dr_id)
+                            ->update(['kd_dr_bpjs' => $bpjsKode]);
+                        $matched++;
+                    }
+                } else {
+                    $skipped++;
+                }
+            }
+
+            $this->dispatch('toast', type: 'success',
+                message: "Sync BPJS selesai. Updated: {$matched}, Skipped (no match / ambigu): {$skipped}",
+                title: 'BPJS Sync', duration: 6000);
+        } catch (\Exception $e) {
+            \Log::error('Master-dokter syncBpjs exception', ['error' => $e->getMessage()]);
+            $this->dispatch('toast', type: 'error',
+                message: 'Error: ' . $e->getMessage(), title: 'BPJS Error');
+        }
     }
 
     /* ===============================
@@ -167,6 +230,12 @@ new class extends Component {
                             </x-select-input>
                         </div>
 
+                        <x-secondary-button type="button" wire:click="syncBpjs"
+                            wire:loading.attr="disabled" wire:target="syncBpjs"
+                            title="Sync kd_dr_bpjs dari BPJS PCare">
+                            <span wire:loading.remove wire:target="syncBpjs">Sync BPJS</span>
+                            <span wire:loading wire:target="syncBpjs">Syncing...</span>
+                        </x-secondary-button>
                         <x-primary-button type="button" wire:click="openCreate">
                             + Tambah Data Dokter Baru
                         </x-primary-button>

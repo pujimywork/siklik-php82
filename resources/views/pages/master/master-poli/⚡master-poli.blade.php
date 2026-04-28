@@ -5,9 +5,10 @@ use Livewire\WithPagination;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Illuminate\Support\Facades\DB;
+use App\Http\Traits\BPJS\PcareTrait;
 
 new class extends Component {
-    use WithPagination;
+    use WithPagination, PcareTrait;
 
     /* -------------------------
      | Filter & Pagination state
@@ -44,6 +45,69 @@ new class extends Component {
     public function requestDelete(string $poliId): void
     {
         $this->dispatch('master.poli.requestDelete', poliId: $poliId);
+    }
+
+    /* -------------------------
+     | Sync poli BPJS PCare — auto-fill kd_poli_bpjs
+     | Match by poli_desc (case-insensitive substring).
+     * ------------------------- */
+    public function syncBpjs(): void
+    {
+        try {
+            $response = $this->getPoliFktp(0, 100)->getOriginalContent();
+            $code = $response['metadata']['code'] ?? 0;
+            $msg  = $response['metadata']['message'] ?? '';
+
+            if ($code != 200) {
+                $this->dispatch('toast', type: 'error',
+                    message: 'BPJS getPoliFktp gagal: ' . $msg, title: 'BPJS Error');
+                return;
+            }
+
+            $bpjsList = $response['response']['list'] ?? $response['response'] ?? [];
+            if (!is_array($bpjsList) || empty($bpjsList)) {
+                $this->dispatch('toast', type: 'warning',
+                    message: 'Daftar poli BPJS kosong.', title: 'BPJS');
+                return;
+            }
+
+            $polisLocal = DB::table('rsmst_polis')->select('poli_id', 'poli_desc', 'kd_poli_bpjs')->get();
+            $matched = 0;
+            $skipped = 0;
+
+            foreach ($bpjsList as $bpjsPoli) {
+                $bpjsKode = $bpjsPoli['kdPoli']  ?? $bpjsPoli['kode']  ?? null;
+                $bpjsName = $bpjsPoli['nmPoli']  ?? $bpjsPoli['nama']  ?? null;
+                if (!$bpjsKode || !$bpjsName) continue;
+
+                // Match by poli_desc (case-insensitive substring both ways)
+                $bpjsUp = mb_strtoupper($bpjsName);
+                $localMatches = $polisLocal->filter(fn($p) =>
+                    str_contains(mb_strtoupper($p->poli_desc ?? ''), $bpjsUp) ||
+                    str_contains($bpjsUp, mb_strtoupper($p->poli_desc ?? ''))
+                );
+
+                if ($localMatches->count() === 1) {
+                    $local = $localMatches->first();
+                    if ($local->kd_poli_bpjs !== $bpjsKode) {
+                        DB::table('rsmst_polis')
+                            ->where('poli_id', $local->poli_id)
+                            ->update(['kd_poli_bpjs' => $bpjsKode]);
+                        $matched++;
+                    }
+                } else {
+                    $skipped++;
+                }
+            }
+
+            $this->dispatch('toast', type: 'success',
+                message: "Sync BPJS selesai. Updated: {$matched}, Skipped (no match / ambigu): {$skipped}",
+                title: 'BPJS Sync', duration: 6000);
+        } catch (\Exception $e) {
+            \Log::error('Master-poli syncBpjs exception', ['error' => $e->getMessage()]);
+            $this->dispatch('toast', type: 'error',
+                message: 'Error: ' . $e->getMessage(), title: 'BPJS Error');
+        }
     }
     /* -------------------------
      | Refresh after child save
@@ -134,6 +198,12 @@ new class extends Component {
                             </x-select-input>
                         </div>
 
+                        <x-secondary-button type="button" wire:click="syncBpjs"
+                            wire:loading.attr="disabled" wire:target="syncBpjs"
+                            title="Sync kd_poli_bpjs dari BPJS PCare">
+                            <span wire:loading.remove wire:target="syncBpjs">Sync BPJS</span>
+                            <span wire:loading wire:target="syncBpjs">Syncing...</span>
+                        </x-secondary-button>
                         <x-primary-button type="button" wire:click="openCreate">
                             + Tambah Data Poli Baru
                         </x-primary-button>
