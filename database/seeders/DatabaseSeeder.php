@@ -27,6 +27,9 @@ class DatabaseSeeder extends Seeder
             RsmstJobSeeder::class,
             RsmstKlaimtypeSeeder::class,
             RsmstEntrytypeSeeder::class,
+            RsmstAccdocSeeder::class,
+            RsmstActempSeeder::class,
+            RsmstActparamedicSeeder::class,
         ]);
     }
 }

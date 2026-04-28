@@ -57,9 +57,9 @@
 
 
                     <a wire:navigate href="{{ url('/') }}" class="flex items-center gap-3">
-                        <img src="{{ asset('images/Logo Horizontal.png') }}" alt="RSI Madinah"
+                        <img src="{{ asset('images/Logo Horizontal.png') }}" alt="SIKlinik"
                             class="block h-16 dark:hidden">
-                        <img src="{{ asset('images/Logo Horizontal white.png') }}" alt="RSI Madinah"
+                        <img src="{{ asset('images/Logo Horizontal white.png') }}" alt="SIKlinik"
                             class="hidden h-16 dark:block">
                     </a>
                 </div>

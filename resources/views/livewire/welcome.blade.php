@@ -41,17 +41,16 @@ new class extends Component {
                         <p
                             class="inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold bg-white border rounded-full border-slate-200 dark:bg-white/5 dark:border-white/10">
                             <span class="w-2 h-2 rounded-full bg-brand-lime"></span>
-                            Sistem Informasi Rumah Sakit
+                            Sistem Informasi Klinik
                         </p>
 
                         <h1 class="mt-5 text-4xl font-extrabold sm:text-5xl lg:text-6xl">
                             Selamat Datang di
-                            <span class="text-brand-green whitespace-nowrap">SIRus</span>
+                            <span class="text-brand-green whitespace-nowrap">SIKlinik</span>
                         </h1>
 
                         <p class="max-w-xl mt-5 text-slate-600 dark:text-slate-300">
-                            Sistem Informasi Rumah Sakit dan E-Rekam Medis untuk rawat jalan, unit gawat darurat & rawat
-                            inap.
+                            Sistem Informasi Klinik &amp; E-Rekam Medis Terintegrasi.
                         </p>
 
                         {{-- CTA --}}
@@ -117,7 +116,7 @@ new class extends Component {
             {{-- FOOTER --}}
             <footer class="py-6 border-t border-slate-200/70 dark:border-white/10">
                 <p class="text-xs text-center text-slate-500 dark:text-slate-400">
-                    © {{ date('Y') }} SIRus — RSI Madinah
+                    © {{ date('Y') }} SIKlinik — Sistem Informasi Klinik
                 </p>
             </footer>
         </section>

@@ -65,6 +65,15 @@ Route::middleware(['auth'])->group(function () {
     Route::livewire('/master/cara-masuk', 'pages::master.master-cara-masuk.master-cara-masuk')
         ->name('master.cara-masuk');
 
+    Route::livewire('/master/jasa-dokter', 'pages::master.master-jasa-dokter.master-jasa-dokter')
+        ->name('master.jasa-dokter');
+
+    Route::livewire('/master/jasa-karyawan', 'pages::master.master-jasa-karyawan.master-jasa-karyawan')
+        ->name('master.jasa-karyawan');
+
+    Route::livewire('/master/jasa-paramedis', 'pages::master.master-jasa-paramedis.master-jasa-paramedis')
+        ->name('master.jasa-paramedis');
+
     Route::livewire('/master/others', 'pages::master.master-others.master-others')
         ->name('master.others');
 
