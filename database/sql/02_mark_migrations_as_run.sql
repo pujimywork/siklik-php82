@@ -10,11 +10,11 @@
 -- (name is already used by an existing object) → migrate fail.
 --
 -- Jalanin sekali (idempotent — re-run safe karena ada check NOT EXISTS):
---   sqlplus siklik/siklik@//127.0.0.1:1521/orcl @database/sql/mark_migrations_as_run_oracle.sql
+--   sqlplus siklik/siklik@//127.0.0.1:1521/orcl @database/sql/02_mark_migrations_as_run.sql
 --
 -- Migration yang DI-MARK (15-1 = 14 file):
 --   v Laravel system: users, cache, jobs migrations (tabel sebagian ada,
---     sisanya akan dibikin manual via laravel_system_tables_oracle.sql)
+--     sisanya akan dibikin manual via 01_create_laravel_system_tables.sql)
 --   v Spatie permission tables (sudah ada di siklik)
 --   v Semua master kita: rsmst_educations, rsmst_jobs, rsmst_klaimtypes,
 --     rsmst_entrytypes, rsmst_accdocs, rsmst_actemps, rsmst_actparamedics,
@@ -28,7 +28,7 @@
 --
 -- PRASYARAT:
 --   - Tabel MIGRATIONS sudah ada di Oracle siklik (sudah ada per inspection).
---   - Pastikan dulu `laravel_system_tables_oracle.sql` jalan supaya
+--   - Pastikan dulu `01_create_laravel_system_tables.sql` jalan supaya
 --     SESSIONS / CACHE / CACHE_LOCKS / JOBS / JOB_BATCHES tersedia.
 --------------------------------------------------------------------------------
 

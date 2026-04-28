@@ -8,7 +8,7 @@
 --   QUEUE_CONNECTION=database-> tabel JOBS, JOB_BATCHES
 --
 -- Cara jalanin (dari sqlplus / SQL Developer):
---   sqlplus siklik/siklik@//127.0.0.1:1521/orcl @database/sql/laravel_system_tables_oracle.sql
+--   sqlplus siklik/siklik@//127.0.0.1:1521/orcl @database/sql/01_create_laravel_system_tables.sql
 --
 -- Catatan:
 -- * `KEY` adalah reserved word Oracle, jadi kolomnya dipakai pakai quoted
