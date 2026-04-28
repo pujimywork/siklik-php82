@@ -202,7 +202,7 @@ new class extends Component {
             ->leftJoin('rsmst_polis as pol', 'pol.kd_poli_bpjs', '=', 'b.kodepoli')
             ->leftJoin('rsmst_doctors as d', 'd.kd_dr_bpjs', '=', 'b.kodedokter')
             ->select(['b.nobooking as rj_no', DB::raw("TO_CHAR(TO_DATE(b.tanggalperiksa,'yyyy-mm-dd'),'dd/mm/yyyy') || ' ' || SUBSTR(b.jampraktek,1,5) || ':00' as rj_date_display"), DB::raw('UPPER(b.norm) as reg_no'), 'p.reg_name', 'p.sex', 'p.address', DB::raw("TO_CHAR(p.birth_date,'dd/mm/yyyy') AS birth_date"), 'b.angkaantrean as no_antrian', 'b.nomorantrean', 'pol.poli_desc', 'd.dr_name'])
-            ->where('b.tanggalperiksa', Carbon::createFromFormat('d/m/Y', $this->filterTanggal)->format('Y-m-d'))
+            ->where('b.tanggalperiksa', $this->filterTanggalCarbon()->format('Y-m-d'))
             ->where('b.status', 'Belum');
 
         if ($this->filterDokter !== '') {
@@ -227,12 +227,21 @@ new class extends Component {
 
     private function dateRange(): array
     {
-        try {
-            $d = Carbon::createFromFormat('d/m/Y', trim($this->filterTanggal))->startOfDay();
-        } catch (\Exception $e) {
-            $d = now()->startOfDay();
-        }
+        $d = $this->filterTanggalCarbon()->startOfDay();
         return [$d, (clone $d)->endOfDay()];
+    }
+
+    /**
+     * Parse filterTanggal (d/m/Y) jadi Carbon. Fallback ke hari ini bila kosong /
+     * format belum lengkap (mis. user mid-typing di input). Cegah Carbon throw.
+     */
+    private function filterTanggalCarbon(): Carbon
+    {
+        try {
+            return Carbon::createFromFormat('d/m/Y', trim((string) $this->filterTanggal))->startOfDay();
+        } catch (\Throwable $e) {
+            return now()->startOfDay();
+        }
     }
 
     #[Computed]
