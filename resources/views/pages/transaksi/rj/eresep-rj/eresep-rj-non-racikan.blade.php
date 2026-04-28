@@ -185,7 +185,9 @@ new class extends Component {
 
                 // 2. Insert ke tabel transaksi
                 $lastDtl = DB::table('rstxn_rjobats')->max('rjobat_dtl') + 1;
-                $takar = DB::table('immst_products')->where('product_id', $this->formEresep['productId'])->value('takar') ?? 'Tablet';
+                // Siklik (klinik pratama): kolom 'takar' tdk ada di immst_products,
+                // siklik-lite default 'Tablet'.
+                $takar = 'Tablet';
 
                 DB::table('rstxn_rjobats')->insert([
                     'rjobat_dtl' => $lastDtl,
