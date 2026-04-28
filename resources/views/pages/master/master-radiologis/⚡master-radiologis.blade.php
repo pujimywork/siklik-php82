@@ -71,7 +71,7 @@ new class extends Component {
     {
         $searchKeyword = trim($this->searchKeyword);
 
-        $queryBuilder = DB::table('rsmst_radiologis')->select('rad_id', 'rad_desc', 'rad_price', 'active_status', 'rad_jd', 'rad_jm')->orderBy('rad_desc', 'asc');
+        $queryBuilder = DB::table('rsmst_radiologis')->select('rad_id', 'rad_desc', 'rad_price', 'active_status', 'rad_jd')->orderBy('rad_desc', 'asc');
 
         if ($searchKeyword !== '') {
             $uppercaseKeyword = mb_strtoupper($searchKeyword);
@@ -84,8 +84,7 @@ new class extends Component {
 
                 $subQuery
                     ->orWhereRaw('UPPER(rad_desc) LIKE ?', ["%{$uppercaseKeyword}%"])
-                    ->orWhereRaw('UPPER(rad_jd) LIKE ?', ["%{$uppercaseKeyword}%"])
-                    ->orWhereRaw('UPPER(rad_jm) LIKE ?', ["%{$uppercaseKeyword}%"]);
+                    ->orWhereRaw('UPPER(rad_jd) LIKE ?', ["%{$uppercaseKeyword}%"]);
             });
         }
 
@@ -173,7 +172,6 @@ new class extends Component {
                                 <th class="px-4 py-3 font-semibold">HARGA</th>
                                 <th class="px-4 py-3 font-semibold">STATUS</th>
                                 <th class="px-4 py-3 font-semibold">RAD JD</th>
-                                <th class="px-4 py-3 font-semibold">RAD JM</th>
                                 <th class="px-4 py-3 font-semibold text-center">AKSI</th>
                             </tr>
                         </thead>
@@ -191,7 +189,6 @@ new class extends Component {
                                         </x-badge>
                                     </td>
                                     <td class="px-4 py-3">{{ $row->rad_jd ?? '-' }}</td>
-                                    <td class="px-4 py-3">{{ $row->rad_jm ?? '-' }}</td>
                                     <td class="px-4 py-3">
                                         <div class="flex flex-wrap justify-center gap-2">
                                             <x-secondary-button type="button"
@@ -211,7 +208,7 @@ new class extends Component {
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
+                                    <td colspan="6" class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
                                         <div class="flex flex-col items-center justify-center">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mb-3 text-gray-400"
                                                 fill="none" viewBox="0 0 24 24" stroke="currentColor">

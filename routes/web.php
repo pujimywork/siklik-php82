@@ -20,9 +20,6 @@ Route::middleware(['auth'])->group(function () {
     Route::livewire('/master/poli', 'pages::master.master-poli.master-poli')
         ->name('master.poli');
 
-    Route::livewire('/master/karyawan', 'pages::master.master-karyawan.master-karyawan')
-        ->name('master.karyawan');
-
     // ===========================================
     // MASTER - SETUP JADWAL PELAYANAN DOKTER BPJS
     // ===========================================
@@ -35,20 +32,11 @@ Route::middleware(['auth'])->group(function () {
     Route::livewire('/master/pasien', 'pages::master.master-pasien.master-pasien')
         ->name('master.pasien');
 
-    Route::livewire('/master/obat', 'pages::master.master-obat.master-obat')
-        ->name('master.obat');
-
     Route::livewire('/master/diagnosa', 'pages::master.master-diagnosa.master-diagnosa')
         ->name('master.diagnosa');
 
-    Route::livewire('/master/kamar', 'pages::master.master-kamar.bangsal.master-bangsal')
-        ->name('master.kamar');
-
     Route::livewire('/master/laborat', 'pages::master.master-laborat.clab.master-clab')
         ->name('master.laborat');
-
-    Route::livewire('/master/kelas', 'pages::master.master-kelas-rawat.master-kelas-rawat')
-        ->name('master.kelas');
 
     Route::livewire('/master/agama', 'pages::master.master-agama.master-agama')
         ->name('master.agama');
@@ -64,6 +52,18 @@ Route::middleware(['auth'])->group(function () {
 
     Route::livewire('/master/cara-masuk', 'pages::master.master-cara-masuk.master-cara-masuk')
         ->name('master.cara-masuk');
+
+    Route::livewire('/master/cara-keluar', 'pages::master.master-cara-keluar.master-cara-keluar')
+        ->name('master.cara-keluar');
+
+    Route::livewire('/master/procedure', 'pages::master.master-procedure.master-procedure')
+        ->name('master.procedure');
+
+    Route::livewire('/master/parameter', 'pages::master.master-parameter.master-parameter')
+        ->name('master.parameter');
+
+    Route::livewire('/master/kemasan', 'pages::master.master-kemasan.master-kemasan')
+        ->name('master.kemasan');
 
     Route::livewire('/master/jasa-dokter', 'pages::master.master-jasa-dokter.master-jasa-dokter')
         ->name('master.jasa-dokter');
@@ -91,9 +91,6 @@ Route::middleware(['auth'])->group(function () {
 
     Route::livewire('/master/radiologis', 'pages::master.master-radiologis.master-radiologis')
         ->name('master.radiologis');
-
-    Route::livewire('/master/diag-keperawatan', 'pages::master.master-diag-keperawatan.master-diag-keperawatan')
-        ->name('master.diag-keperawatan');
 
     // ===========================================
     // RAWAT JALAN (RJ) - DAFTAR RAWAT JALAN

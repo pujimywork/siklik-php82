@@ -63,7 +63,7 @@ new class extends Component {
     {
         $searchKeyword = trim($this->searchKeyword);
 
-        $queryBuilder = DB::table('rsmst_polis')->select('poli_id', 'poli_desc', 'kd_poli_bpjs', 'poli_uuid', 'spesialis_status')->orderBy('poli_desc', 'asc');
+        $queryBuilder = DB::table('rsmst_polis')->select('poli_id', 'poli_desc', 'kd_poli_bpjs', 'poli_uuid')->orderBy('poli_desc', 'asc');
 
         if ($searchKeyword !== '') {
             $uppercaseKeyword = mb_strtoupper($searchKeyword);
@@ -156,7 +156,6 @@ new class extends Component {
                                 <th class="px-4 py-3 font-semibold">POLI</th>
                                 <th class="px-4 py-3 font-semibold">BPJS</th>
                                 <th class="px-4 py-3 font-semibold">UUID</th>
-                                <th class="px-4 py-3 font-semibold">STATUS</th>
                                 <th class="px-4 py-3 font-semibold">AKSI</th>
                             </tr>
                         </thead>
@@ -169,12 +168,6 @@ new class extends Component {
                                     <td class="px-4 py-3 font-semibold">{{ $row->poli_desc }}</td>
                                     <td class="px-4 py-3">{{ $row->kd_poli_bpjs }}</td>
                                     <td class="px-4 py-3">{{ $row->poli_uuid }}</td>
-
-                                    <td class="px-4 py-3">
-                                        <x-badge :variant="(string) $row->spesialis_status === '1' ? 'success' : 'gray'">
-                                            {{ (string) $row->spesialis_status === '1' ? 'Spesialis' : 'Non Spesialis' }}
-                                        </x-badge>
-                                    </td>
 
                                     <td class="px-4 py-3">
                                         <div class="flex flex-wrap gap-2">
@@ -194,7 +187,7 @@ new class extends Component {
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
+                                    <td colspan="5" class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
                                         Data belum ada.
                                     </td>
                                 </tr>

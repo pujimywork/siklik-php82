@@ -21,7 +21,6 @@ new class extends Component {
         'poliName' => '',
         'bpjsPoliCode' => null,
         'poliUuid' => null,
-        'isSpecialist' => '0',
     ];
 
     #[On('master.poli.openCreate')]
@@ -63,7 +62,6 @@ new class extends Component {
             'poliName' => '',
             'bpjsPoliCode' => null,
             'poliUuid' => null,
-            'isSpecialist' => '0',
         ];
 
         $this->resetValidation();
@@ -76,7 +74,6 @@ new class extends Component {
             'poliName' => (string) ($row->poli_desc ?? ''),
             'bpjsPoliCode' => $row->kd_poli_bpjs,
             'poliUuid' => $row->poli_uuid,
-            'isSpecialist' => (string) ($row->spesialis_status ?? '0'),
         ];
     }
 
@@ -88,7 +85,6 @@ new class extends Component {
             'formPoli.poliName' => 'required|string|max:255',
             'formPoli.bpjsPoliCode' => 'nullable|string|max:50',
             'formPoli.poliUuid' => 'nullable|string|max:100',
-            'formPoli.isSpecialist' => 'required|in:0,1',
         ];
     }
 
@@ -105,9 +101,6 @@ new class extends Component {
             'formPoli.bpjsPoliCode.max' => ':attribute maksimal :max karakter.',
 
             'formPoli.poliUuid.max' => ':attribute maksimal :max karakter.',
-
-            'formPoli.isSpecialist.required' => ':attribute wajib dipilih.',
-            'formPoli.isSpecialist.in' => ':attribute tidak valid.',
         ];
     }
 
@@ -118,7 +111,6 @@ new class extends Component {
             'formPoli.poliName' => 'Nama Poli',
             'formPoli.bpjsPoliCode' => 'Kode Poli BPJS',
             'formPoli.poliUuid' => 'UUID Poli',
-            'formPoli.isSpecialist' => 'Status Poli',
         ];
     }
 
@@ -130,7 +122,6 @@ new class extends Component {
             'poli_desc' => $this->formPoli['poliName'],
             'kd_poli_bpjs' => $this->formPoli['bpjsPoliCode'],
             'poli_uuid' => $this->formPoli['poliUuid'],
-            'spesialis_status' => $this->formPoli['isSpecialist'],
         ];
 
         if ($this->formMode === 'create') {
@@ -260,17 +251,6 @@ new class extends Component {
                                         :disabled="$formMode === 'edit'" :error="$errors->has('formPoli.poliId')"
                                         class="w-full mt-1" x-on:keydown.enter.prevent="$refs.inputPoliName?.focus()" />
                                     <x-input-error :messages="$errors->get('formPoli.poliId')" class="mt-1" />
-                                </div>
-
-                                {{-- Status --}}
-                                <div>
-                                    <x-input-label value="Status" />
-                                    <x-select-input wire:model.live="formPoli.isSpecialist"
-                                        :error="$errors->has('formPoli.isSpecialist')" class="w-full mt-1">
-                                        <option value="0">Non Spesialis</option>
-                                        <option value="1">Spesialis</option>
-                                    </x-select-input>
-                                    <x-input-error :messages="$errors->get('formPoli.isSpecialist')" class="mt-1" />
                                 </div>
                             </div>
 

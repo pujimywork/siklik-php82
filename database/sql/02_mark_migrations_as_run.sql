@@ -12,14 +12,15 @@
 -- Jalanin sekali (idempotent — re-run safe karena ada check NOT EXISTS):
 --   sqlplus siklik/siklik@//127.0.0.1:1521/orcl @database/sql/02_mark_migrations_as_run.sql
 --
--- Migration yang DI-MARK (15-1 = 14 file):
+-- Migration yang DI-MARK (18 file):
 --   v Laravel system: users, cache, jobs migrations (tabel sebagian ada,
 --     sisanya akan dibikin manual via 01_create_laravel_system_tables.sql)
 --   v Spatie permission tables (sudah ada di siklik)
---   v Semua master kita: rsmst_educations, rsmst_jobs, rsmst_klaimtypes,
---     rsmst_entrytypes, rsmst_accdocs, rsmst_actemps, rsmst_actparamedics,
---     tkmst_categories, tkmst_uoms, tkmst_kasirs (semua tabel sudah ada
---     di Oracle siklik dari awal)
+--   v Master batch 1-3: rsmst_educations/jobs/klaimtypes/entrytypes,
+--     rsmst_accdocs/actemps/actparamedics, tkmst_categories/uoms/kasirs
+--   v Master batch 4 (cara-keluar/procedure/parameter/kemasan):
+--     rsmst_outs, rsmst_mstprocedures, rsmst_parameters, immst_contents
+--   (Semua tabel sudah ada di Oracle siklik dari awal)
 --
 -- Migration yang TIDAK dimark (sengaja):
 --   x rsmst_snomed_codes — tabel ini TIDAK ADA di siklik. Kalau mau pakai
@@ -54,7 +55,11 @@ DECLARE
         '2026_04_28_140006_create_rsmst_actparamedics_table',
         '2026_04_28_140007_create_tkmst_categories_table',
         '2026_04_28_140008_create_tkmst_uoms_table',
-        '2026_04_28_140009_create_tkmst_kasirs_table'
+        '2026_04_28_140009_create_tkmst_kasirs_table',
+        '2026_04_28_150001_create_rsmst_outs_table',
+        '2026_04_28_150002_create_rsmst_mstprocedures_table',
+        '2026_04_28_150003_create_rsmst_parameters_table',
+        '2026_04_28_150004_create_immst_contents_table'
     );
 BEGIN
     -- Ambil max id saat ini supaya insert pakai id berikutnya

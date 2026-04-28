@@ -23,10 +23,9 @@ new class extends Component {
     
     // Status
     public string $activeStatus = '1'; // default aktif
-    
-    // Informasi Waktu (JD = Jam Dokter, JM = Jam Mulai?)
+
+    // Jasa Dokter radiologi
     public ?string $radJd = null;
-    public ?string $radJm = null;
         public function mount(): void
     {
         $this->registerAreas(['modal']);
@@ -73,7 +72,7 @@ new class extends Component {
     // ==================== RESET FORM FIELDS ====================
     protected function resetFormFields(): void
     {
-        $this->reset(['radId', 'radDesc', 'radPrice', 'radJd', 'radJm']);
+        $this->reset(['radId', 'radDesc', 'radPrice', 'radJd']);
         $this->activeStatus = '1'; // default aktif
         $this->resetVersion();
     }
@@ -86,7 +85,6 @@ new class extends Component {
         $this->radPrice = (string) ($row->rad_price ?? '0');
         $this->activeStatus = (string) ($row->active_status ?? '1');
         $this->radJd = $row->rad_jd;
-        $this->radJm = $row->rad_jm;
     }
 
     // ==================== LOAD DROPDOWN OPTIONS ====================
@@ -107,7 +105,6 @@ new class extends Component {
             'radPrice' => ['required', 'numeric', 'min:0'],
             'activeStatus' => ['required', Rule::in(['0', '1'])],
             'radJd' => ['nullable', 'string', 'max:50'],
-            'radJm' => ['nullable', 'string', 'max:50'],
         ];
     }
 
@@ -130,7 +127,6 @@ new class extends Component {
             'activeStatus.in' => ':attribute tidak valid.',
 
             'radJd.max' => ':attribute maksimal :max karakter.',
-            'radJm.max' => ':attribute maksimal :max karakter.',
         ];
     }
 
@@ -142,8 +138,7 @@ new class extends Component {
             'radDesc' => 'Nama Tindakan',
             'radPrice' => 'Harga',
             'activeStatus' => 'Status Aktif',
-            'radJd' => 'Jam Dokter',
-            'radJm' => 'Jam Mulai',
+            'radJd' => 'Jasa Dokter',
         ];
     }
 
@@ -157,7 +152,6 @@ new class extends Component {
             'rad_price' => $data['radPrice'],
             'active_status' => $data['activeStatus'],
             'rad_jd' => $data['radJd'],
-            'rad_jm' => $data['radJm'],
         ];
 
         try {
@@ -319,13 +313,6 @@ new class extends Component {
                                     <x-input-error :messages="$errors->get('radJd')" class="mt-1" />
                                 </div>
 
-                                {{-- RAD JM --}}
-                                <div>
-                                    <x-input-label value="Jasa Medis (RAD JM)" />
-                                    <x-text-input-number wire:model="radJm" :error="$errors->has('radJm')"
-                                        class="w-full mt-1" />
-                                    <x-input-error :messages="$errors->get('radJm')" class="mt-1" />
-                                </div>
                             </div>
                         </div>
                     </x-border-form>

@@ -33,6 +33,10 @@ class DatabaseSeeder extends Seeder
             TkmstCategorySeeder::class,
             TkmstUomSeeder::class,
             TkmstKasirSeeder::class,
+            RsmstOutSeeder::class,
+            RsmstMstprocedureSeeder::class,
+            RsmstParameterSeeder::class,
+            ImmstContentSeeder::class,
         ]);
     }
 }
