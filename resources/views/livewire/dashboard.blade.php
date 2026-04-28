@@ -62,6 +62,7 @@ new class extends Component {
             $entry(['group' => 'Master Toko', 'groupOrder' => 4, 'order' => 6, 'route' => 'master.kota-toko', 'title' => 'Master Kota (Toko)',      'desc' => 'Kota untuk modul toko',                      'roles' => ['admin'], 'badge' => 'Toko']),
             $entry(['group' => 'Master Toko', 'groupOrder' => 4, 'order' => 7, 'route' => 'master.supplier',  'title' => 'Master Supplier',         'desc' => 'Supplier obat & alkes',                      'roles' => ['admin'], 'badge' => 'Toko']),
             $entry(['group' => 'Master Toko', 'groupOrder' => 4, 'order' => 8, 'route' => 'master.customer',  'title' => 'Master Customer',         'desc' => 'Customer modul toko/apotek',                 'roles' => ['admin'], 'badge' => 'Toko']),
+            $entry(['group' => 'Master Toko', 'groupOrder' => 4, 'order' => 9, 'route' => 'master.product',   'title' => 'Master Produk Apotek',    'desc' => 'Inventory obat & alkes — referensi transaksi', 'roles' => ['admin', 'apotek'], 'badge' => 'Toko']),
 
             // ── Rawat Jalan ────────────────────────────────────────────
             $entry(['group' => 'Rawat Jalan', 'groupOrder' => 5, 'order' => 1, 'route' => 'rawat-jalan.daftar',  'title' => 'Daftar Rawat Jalan', 'desc' => 'Pendaftaran & manajemen pasien rawat jalan', 'roles' => ['admin', 'mr', 'perawat', 'dokter', 'casemix'], 'badge' => 'RJ']),

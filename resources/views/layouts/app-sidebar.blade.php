@@ -63,6 +63,7 @@
             ['label' => 'Master Kota (Toko)',      'route' => 'master.kota-toko'],
             ['label' => 'Master Supplier',         'route' => 'master.supplier'],
             ['label' => 'Master Customer',         'route' => 'master.customer'],
+            ['label' => 'Master Produk Apotek',    'route' => 'master.product'],
         ],
         'Keuangan' => [
             ['label' => 'Penerimaan Kas TU',  'route' => 'keuangan.penerimaan-kas-tu'],
