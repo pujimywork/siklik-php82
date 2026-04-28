@@ -181,12 +181,7 @@ new class extends Component {
             'dr_address' => $data['drAddress'],
             'dr_phone' => $data['drPhone'],
             'poli_id' => $data['poliId'],
-            'basic_salary' => $data['basicSalary'],
             'poli_price' => $data['poliPrice'],
-            'ugd_price' => $data['ugdPrice'],
-            'poli_price_bpjs' => $data['poliPriceBpjs'],
-            'ugd_price_bpjs' => $data['ugdPriceBpjs'],
-            'contribution_status' => $data['contributionStatus'],
             'active_status' => $data['activeStatus'],
             'rs_admin' => $data['rsAdmin'],
             'kd_dr_bpjs' => $data['kdDrBpjs'],
@@ -259,12 +254,7 @@ new class extends Component {
         $this->drAddress = $row->dr_address;
         $this->drPhone = $row->dr_phone;
         $this->poliId = $row->poli_id;
-        $this->basicSalary = $row->basic_salary !== null ? (string) $row->basic_salary : null;
         $this->poliPrice = $row->poli_price !== null ? (string) $row->poli_price : null;
-        $this->ugdPrice = $row->ugd_price !== null ? (string) $row->ugd_price : null;
-        $this->poliPriceBpjs = $row->poli_price_bpjs !== null ? (string) $row->poli_price_bpjs : null;
-        $this->ugdPriceBpjs = $row->ugd_price_bpjs !== null ? (string) $row->ugd_price_bpjs : null;
-        $this->contributionStatus = (string) ($row->contribution_status ?? '0');
         // Normalisasi konsisten dengan toggle/table: HANYA '1' → Aktif, sisanya
         // (null/'0'/'N'/whitespace) → Non-aktif.
         $this->activeStatus = (string) $row->active_status === '1' ? '1' : '0';

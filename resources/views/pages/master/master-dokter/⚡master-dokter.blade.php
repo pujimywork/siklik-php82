@@ -154,9 +154,8 @@ new class extends Component {
             ->select(
                 'a.dr_id', 'a.dr_name', 'a.dr_phone', 'a.dr_address',
                 'a.kd_dr_bpjs', 'a.dr_uuid', 'a.dr_nik',
-                'a.basic_salary', 'a.rs_admin',
-                'a.poli_price', 'a.ugd_price',
-                'a.poli_price_bpjs', 'a.ugd_price_bpjs',
+                'a.rs_admin',
+                'a.poli_price',
                 'a.active_status',
                 'a.poli_id', 'b.poli_desc', 'b.kd_poli_bpjs',
             )
