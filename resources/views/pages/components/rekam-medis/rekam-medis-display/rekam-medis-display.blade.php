@@ -237,6 +237,8 @@ new class extends Component {
 
         $searchKeyword = trim($this->searchKeyword);
 
+        // Klinik pratama: hanya RJ. Reference rsview_ugdkasir/rsview_rihdrs
+        // di-drop supaya nggak invalidate karena synonym RS hilang.
         $queryBuilder = DB::table('rsview_ermstatus')
             ->select(
                 DB::raw("to_char(txn_date,'dd/mm/yyyy hh24:mi:ss') AS txn_date"),
@@ -255,27 +257,14 @@ new class extends Component {
                         FROM rsview_rjkasir
                         WHERE rj_no = txn_no
                     )
-                    WHEN layanan_status='UGD' THEN (
-                        SELECT datadaftarugd_json
-                        FROM rsview_ugdkasir
-                        WHERE rj_no = txn_no
-                    )
-                    WHEN layanan_status='RI' THEN (
-                        SELECT datadaftarri_json
-                        FROM rsview_rihdrs
-                        WHERE rihdr_no = txn_no
-                    )
                     ELSE NULL
                 END) AS datadaftar_json"),
             )
-            ->where('reg_no', $this->regNo);
+            ->where('reg_no', $this->regNo)
+            ->where('layanan_status', 'RJ');
 
         if ($this->filterTahun) {
             $queryBuilder->whereYear('txn_date', $this->filterTahun);
-        }
-
-        if ($this->filterLayanan) {
-            $queryBuilder->where('layanan_status', $this->filterLayanan);
         }
 
         if ($searchKeyword !== '') {
@@ -324,13 +313,18 @@ new class extends Component {
             ];
         }
 
-        $stats = DB::table('rsview_ermstatus')->select(DB::raw('COUNT(*) as total'), DB::raw("SUM(CASE WHEN layanan_status='RJ' THEN 1 ELSE 0 END) as rj"), DB::raw("SUM(CASE WHEN layanan_status='UGD' THEN 1 ELSE 0 END) as ugd"), DB::raw("SUM(CASE WHEN layanan_status='RI' THEN 1 ELSE 0 END) as ri"))->where('reg_no', $this->regNo)->first();
+        // Klinik pratama: hanya hitung RJ.
+        $stats = DB::table('rsview_ermstatus')
+            ->select(DB::raw('COUNT(*) as total'))
+            ->where('reg_no', $this->regNo)
+            ->where('layanan_status', 'RJ')
+            ->first();
 
         return [
             'total' => $stats->total ?? 0,
-            'rj' => $stats->rj ?? 0,
-            'ugd' => $stats->ugd ?? 0,
-            'ri' => $stats->ri ?? 0,
+            'rj'    => $stats->total ?? 0,
+            'ugd'   => 0,
+            'ri'    => 0,
         ];
     }
 
