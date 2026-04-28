@@ -11,11 +11,12 @@ use Illuminate\Validation\Rule;
 use Illuminate\Database\QueryException;
 use App\Http\Traits\Master\MasterPasien\MasterPasienTrait;
 use App\Http\Traits\SATUSEHAT\PatientTrait;
+use App\Http\Traits\BPJS\PcareTrait;
 use App\Http\Traits\WithRenderVersioning\WithRenderVersioningTrait;
 use Carbon\Carbon;
 
 new class extends Component {
-    use MasterPasienTrait, PatientTrait, WithRenderVersioningTrait;
+    use MasterPasienTrait, PatientTrait, PcareTrait, WithRenderVersioningTrait;
 
     public string $formMode = 'create'; // create|edit
     public string $regNo = '';
@@ -591,6 +592,92 @@ new class extends Component {
         } catch (\Exception $e) {
             $this->dispatch('toast', type: 'error', message: 'Error saat memproses UUID: ' . $e->getMessage());
             \Log::error('Error UpdatepatientUuid: ' . $e->getMessage());
+        }
+    }
+
+    /* -------------------------
+     | Cek peserta BPJS via PCare
+     | Prioritas: jika NIK terisi & 16 digit → getPesertabyJenisKartu('nik', NIK)
+     |            else jika idbpjs terisi & 13 digit → getPeserta(noKartu)
+     | Auto-fill: idbpjs, regName, tglLahir, sex, kontak.no HP, golDarah
+     * ------------------------- */
+    public function cekBpjs(): void
+    {
+        $identitas = $this->dataPasien['pasien']['identitas'] ?? [];
+        $nik = preg_replace('/\D/', '', $identitas['nik'] ?? '');
+        $idbpjs = preg_replace('/\D/', '', $identitas['idbpjs'] ?? '');
+
+        try {
+            if (strlen($nik) === 16) {
+                $resp = $this->getPesertabyJenisKartu('nik', $nik)->getOriginalContent();
+            } elseif (strlen($idbpjs) >= 11 && strlen($idbpjs) <= 16) {
+                $resp = $this->getPeserta($idbpjs)->getOriginalContent();
+            } else {
+                $this->dispatch('toast', type: 'warning',
+                    message: 'Isi NIK 16 digit atau ID BPJS (11–16 digit) terlebih dahulu.',
+                    title: 'BPJS');
+                return;
+            }
+
+            $code = $resp['metadata']['code'] ?? 0;
+            $msg  = $resp['metadata']['message'] ?? '';
+
+            if ($code != 200) {
+                $this->dispatch('toast', type: 'error',
+                    message: 'BPJS: ' . ($msg ?: "code {$code}"),
+                    title: 'BPJS Cek Peserta');
+                return;
+            }
+
+            $data = $resp['response'] ?? [];
+            if (!is_array($data) || empty($data)) {
+                $this->dispatch('toast', type: 'warning',
+                    message: 'Peserta tidak ditemukan di BPJS.',
+                    title: 'BPJS');
+                return;
+            }
+
+            // Auto-fill ke form
+            if (!empty($data['noKartu'])) {
+                $this->dataPasien['pasien']['identitas']['idbpjs'] = $data['noKartu'];
+            }
+            if (!empty($data['nik'])) {
+                $this->dataPasien['pasien']['identitas']['nik'] = $data['nik'];
+            }
+            if (!empty($data['nama']) && empty($this->dataPasien['pasien']['regName'])) {
+                $this->dataPasien['pasien']['regName'] = $data['nama'];
+            }
+            // tglLahir BPJS: 'dd-mm-yyyy' → form: 'd/m/Y'
+            if (!empty($data['tglLahir']) && empty($this->dataPasien['pasien']['tglLahir'])) {
+                try {
+                    $tgl = Carbon::createFromFormat('d-m-Y', $data['tglLahir'])->format('d/m/Y');
+                    $this->dataPasien['pasien']['tglLahir'] = $tgl;
+                    $this->syncUmurFromTglLahir($tgl);
+                } catch (\Throwable $e) { /* skip */ }
+            }
+            // sex BPJS: 'L'/'P' → jenisKelaminId 1/2
+            if (!empty($data['sex']) && empty($this->dataPasien['pasien']['jenisKelamin']['jenisKelaminId'])) {
+                $this->dataPasien['pasien']['jenisKelamin']['jenisKelaminId'] = $data['sex'] === 'L' ? 1 : 2;
+            }
+            // No telepon
+            if (!empty($data['noTelepon']) && empty($this->dataPasien['pasien']['kontak']['nomerTelponSelulerPasien'])) {
+                $this->dataPasien['pasien']['kontak']['nomerTelponSelulerPasien'] = preg_replace('/\D/', '', $data['noTelepon']);
+            }
+
+            $this->incrementVersion('modal');
+
+            $faskes = $data['kdProviderPst']['nmProvider'] ?? '';
+            $jenis  = $data['jenisPeserta']['nama'] ?? ($data['jnsPeserta']['nmJnsPeserta'] ?? '');
+            $info = trim(($jenis ? "Jenis: {$jenis}" : '') . ($faskes ? " · Faskes: {$faskes}" : ''));
+
+            $this->dispatch('toast', type: 'success',
+                message: 'Data BPJS ditemukan & form di-update. ' . $info,
+                title: 'BPJS', duration: 6000);
+        } catch (\Exception $e) {
+            \Log::error('Master-pasien cekBpjs exception', ['error' => $e->getMessage()]);
+            $this->dispatch('toast', type: 'error',
+                message: 'Error: ' . $e->getMessage(),
+                title: 'BPJS Error');
         }
     }
 

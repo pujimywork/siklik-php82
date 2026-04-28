@@ -20,7 +20,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-4">
             {{-- NIK --}}
             <div>
                 <x-input-label value="NIK" :required="true" />
@@ -33,6 +33,16 @@
                 <x-input-label value="ID BPJS" />
                 <x-text-input wire:model.live="dataPasien.pasien.identitas.idbpjs" placeholder="13 digit"
                     class="w-full mt-1" />
+            </div>
+
+            {{-- CEK BPJS --}}
+            <div class="flex items-end">
+                <x-secondary-button type="button" wire:click.prevent="cekBpjs" wire:loading.attr="disabled"
+                    wire:target="cekBpjs" class="w-full"
+                    title="Cek peserta BPJS via PCare (NIK / No.Kartu)">
+                    <span wire:loading.remove wire:target="cekBpjs">Cek BPJS</span>
+                    <span wire:loading wire:target="cekBpjs">Mengecek...</span>
+                </x-secondary-button>
             </div>
 
             {{-- Paspor --}}
