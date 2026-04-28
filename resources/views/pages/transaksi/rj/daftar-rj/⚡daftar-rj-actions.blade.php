@@ -39,6 +39,21 @@ new class extends Component {
     public array $internal12Options = [['internal12' => '1', 'internal12Desc' => 'Faskes Tingkat 1'], ['internal12' => '2', 'internal12Desc' => 'Faskes Tingkat 2 RS']];
 
     /* -------------------------
+     | BPJS PCare klinik pratama: Kunjungan Sakit/Sehat & Tkp
+     * ------------------------- */
+    public string $kunjSakit = '1'; // 1=Sakit (default), 0=Sehat
+    public array $kunjSakitOptions = [
+        ['kunjSakitId' => '1', 'kunjSakitDesc' => 'Kunjungan Sakit'],
+        ['kunjSakitId' => '0', 'kunjSakitDesc' => 'Kunjungan Sehat'],
+    ];
+
+    public string $kdTkp = '10'; // 10=RJTP (default), 50=Promotif
+    public array $kdTkpOptions = [
+        ['kdTkpId' => '10', 'kdTkpDesc' => 'RJTP'],
+        ['kdTkpId' => '50', 'kdTkpDesc' => 'Promotif'],
+    ];
+
+    /* -------------------------
      | Riwayat Kunjungan BPJS state
      * ------------------------- */
     public bool $showRiwayatBpjs = false;
@@ -314,7 +329,7 @@ new class extends Component {
      =============================== */
     private function updateJsonData(string $rjNo): void
     {
-        $allowedFields = ['regNo', 'drId', 'drDesc', 'poliId', 'poliDesc', 'kddrbpjs', 'kdpolibpjs', 'klaimId', 'kunjunganId', 'rjDate', 'shift', 'noAntrian', 'noBooking', 'slCodeFrom', 'passStatus', 'rjStatus', 'txnStatus', 'ermStatus', 'cekLab', 'kunjunganInternalStatus', 'noReferensi', 'postInap', 'internal12', 'internal12Desc', 'kontrol12', 'kontrol12Desc', 'taskIdPelayanan', 'sep', 'klaimStatus'];
+        $allowedFields = ['regNo', 'drId', 'drDesc', 'poliId', 'poliDesc', 'kddrbpjs', 'kdpolibpjs', 'klaimId', 'kunjunganId', 'rjDate', 'shift', 'noAntrian', 'noBooking', 'slCodeFrom', 'passStatus', 'rjStatus', 'txnStatus', 'ermStatus', 'cekLab', 'kunjunganInternalStatus', 'noReferensi', 'postInap', 'internal12', 'internal12Desc', 'kontrol12', 'kontrol12Desc', 'taskIdPelayanan', 'sep', 'klaimStatus', 'kunjSakit', 'kdTkp'];
 
         if ($this->formMode === 'create') {
             $this->updateJsonRJ($rjNo, $this->dataDaftarPoliRJ);
@@ -427,7 +442,7 @@ new class extends Component {
             'noKartu'      => $noKartu,
             'kdPoli'       => $this->dataDaftarPoliRJ['kdpolibpjs'] ?? '',
             'keluhan'      => $keluhan,
-            'kunjSakit'    => 1, // 1=sakit, 0=checkup
+            'kunjSakit'    => (int) ($this->dataDaftarPoliRJ['kunjSakit'] ?? 1), // 1=sakit, 0=sehat
             'sistole'      => $sistole,
             'diastole'     => $diastole,
             'beratBadan'   => $bb,
@@ -436,7 +451,7 @@ new class extends Component {
             'lingkarPerut' => $lp,
             'heartRate'    => $nadi,
             'rujukBalik'   => 'N',
-            'kdTkp'        => '10', // 10=RJTP klinik pratama
+            'kdTkp'        => (string) ($this->dataDaftarPoliRJ['kdTkp'] ?? '10'), // 10=RJTP, 50=Promotif
         ];
 
         try {
@@ -943,8 +958,18 @@ new class extends Component {
             $this->incrementVersion('modal');
         }
 
-        if (in_array($name, ['klaimId', 'kunjunganId', 'kontrol12', 'internal12'])) {
+        if (in_array($name, ['klaimId', 'kunjunganId', 'kontrol12', 'internal12', 'kunjSakit', 'kdTkp'])) {
             $this->incrementVersion('modal');
+        }
+
+        if ($name === 'kunjSakit') {
+            $this->kunjSakit = $value;
+            $this->dataDaftarPoliRJ['kunjSakit'] = $value;
+        }
+
+        if ($name === 'kdTkp') {
+            $this->kdTkp = $value;
+            $this->dataDaftarPoliRJ['kdTkp'] = $value;
         }
 
         if ($name === 'klaimId') {
@@ -996,6 +1021,8 @@ new class extends Component {
         $this->kunjunganId = $this->dataDaftarPoliRJ['kunjunganId'] ?? '1';
         $this->kontrol12 = $this->dataDaftarPoliRJ['kontrol12'] ?? '1';
         $this->internal12 = $this->dataDaftarPoliRJ['internal12'] ?? '1';
+        $this->kunjSakit = (string) ($this->dataDaftarPoliRJ['kunjSakit'] ?? '1');
+        $this->kdTkp = (string) ($this->dataDaftarPoliRJ['kdTkp'] ?? '10');
 
         $this->dataDaftarPoliRJ['kontrol12Desc'] = collect($this->kontrol12Options)->first(fn($o) => $o['kontrol12'] === $this->kontrol12)['kontrol12Desc'] ?? '-';
         $this->dataDaftarPoliRJ['internal12Desc'] = collect($this->internal12Options)->first(fn($o) => $o['internal12'] === $this->internal12)['internal12Desc'] ?? '-';
@@ -1009,6 +1036,8 @@ new class extends Component {
         $this->kunjunganId = '1';
         $this->kontrol12 = '1';
         $this->internal12 = '1';
+        $this->kunjSakit = '1';
+        $this->kdTkp = '10';
         $this->formMode = 'create';
 
         $this->dataDaftarPoliRJ['rjDate'] = Carbon::now()->format('d/m/Y H:i:s');
@@ -1181,6 +1210,34 @@ new class extends Component {
                                             <x-input-error :messages="$errors->get('dataDaftarPoliRJ.noReferensi')" />
                                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">di isi dgn : (No
                                                 Rujukan untuk FKTP/FKTL) (SKDP untuk Kontrol/Rujukan Internal)</p>
+                                        </div>
+
+                                        {{-- Kunjungan Sakit/Sehat — PCare klinik pratama --}}
+                                        <div>
+                                            <x-input-label value="Kunjungan Sakit / Sehat" :required="true" />
+                                            <div class="grid grid-cols-2 gap-2">
+                                                @foreach ($kunjSakitOptions as $opt)
+                                                    <x-radio-button :label="$opt['kunjSakitDesc']" :value="$opt['kunjSakitId']" name="kunjSakit"
+                                                        wire:model.live="kunjSakit" :disabled="$isFormLocked" />
+                                                @endforeach
+                                            </div>
+                                            <p class="mt-1 text-xs {{ $kunjSakit === '1' ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400' }}">
+                                                {{ $kunjSakit === '1' ? 'Pasien datang dgn keluhan/sakit.' : 'Imunisasi, KB, kontrol gizi, promotif (poli BPJS: 020, 021, 023–026).' }}
+                                            </p>
+                                        </div>
+
+                                        {{-- Tkp (Tempat Kunjungan Pelayanan) PCare --}}
+                                        <div>
+                                            <x-input-label value="Tempat Pelayanan (Tkp)" :required="true" />
+                                            <div class="grid grid-cols-2 gap-2">
+                                                @foreach ($kdTkpOptions as $opt)
+                                                    <x-radio-button :label="$opt['kdTkpDesc']" :value="$opt['kdTkpId']" name="kdTkp"
+                                                        wire:model.live="kdTkp" :disabled="$isFormLocked" />
+                                                @endforeach
+                                            </div>
+                                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                10 = Rawat Jalan Tingkat Pertama (default klinik). 50 = Promotif (penyuluhan / kelas ibu hamil / dll).
+                                            </p>
                                         </div>
                                     </div>
                                 @endif
