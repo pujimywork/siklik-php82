@@ -37,7 +37,7 @@ new class extends Component {
             return;
         }
 
-        $row = DB::table('immst_products')
+        $row = DB::table('tkmst_products')
             ->select(['product_id', 'product_name', 'sales_price', 'cost_price'])
             ->where('product_id', $this->initialProductId)
             ->where('active_status', '1')
@@ -61,14 +61,15 @@ new class extends Component {
 
         $keyword = trim($this->search);
 
-        if (mb_strlen($keyword) < 2) {
+        // Match siklik-lite: aktif sejak 1 char (lebih responsif untuk apotek)
+        if (mb_strlen($keyword) < 1) {
             $this->closeAndResetList();
             return;
         }
 
         // ===== 1) exact match by product_id =====
         if (ctype_digit($keyword)) {
-            $exactRow = DB::table('immst_products')
+            $exactRow = DB::table('tkmst_products')
                 ->select(['product_id', 'product_name', 'sales_price', 'cost_price'])
                 ->where('active_status', '1')
                 ->where('product_id', $keyword)
@@ -86,6 +87,8 @@ new class extends Component {
         }
 
         // ===== 2) search by name / content / id partial =====
+        // tkmst_products = master toko/apotek (yg dijual). immst_productcontents
+        // & immst_contents tetap dipakai utk lookup kandungan (shared master).
         $rows = DB::select(
             "select * from (
                     select product_id,
@@ -103,7 +106,7 @@ new class extends Component {
                     where z.product_id=a.product_id
                     and z.cont_id=x.cont_id)product_content
 
-                    from immst_products a
+                    from tkmst_products a
                     where active_status='1'
                     group by product_id,product_name, sales_price, cost_price
                     order by product_name)
