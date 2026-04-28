@@ -211,7 +211,6 @@ new class extends Component {
             'sl_codefrom' => $this->dataDaftarPoliRJ['slCodeFrom'] ?? '02',
             'kunjungan_internal_status' => $this->dataDaftarPoliRJ['kunjunganInternalStatus'] ?? '0',
             'waktu_masuk_pelayanan' => DB::raw("to_date('" . $this->dataDaftarPoliRJ['rjDate'] . "','dd/mm/yyyy hh24:mi:ss')"),
-            'vno_sep' => $this->dataDaftarPoliRJ['sep']['noSep'] ?? '',
         ];
     }
 
@@ -1183,67 +1182,6 @@ new class extends Component {
                                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">di isi dgn : (No
                                                 Rujukan untuk FKTP/FKTL) (SKDP untuk Kontrol/Rujukan Internal)</p>
                                         </div>
-                                        <div class="flex flex-wrap items-center gap-2 mt-2">
-                                            <x-info-button type="button" wire:click="openVclaimModal"
-                                                class="gap-2 text-xs">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                </svg>
-                                                Kelola SEP BPJS
-                                            </x-info-button>
-                                            @if (!empty($dataDaftarPoliRJ['sep']['noSep']))
-                                                <div
-                                                    class="flex items-center gap-2 px-3 py-1 text-xs text-green-700 bg-green-100 rounded-full dark:bg-green-900/30 dark:text-green-300">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                        viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2"
-                                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                    SEP: {{ $dataDaftarPoliRJ['sep']['noSep'] }}
-                                                </div>
-                                                <x-icon-button color="blue" type="button" wire:click="cetakSEP"
-                                                    title="Cetak SEP">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                        viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2"
-                                                            d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                                                    </svg>
-                                                </x-icon-button>
-                                            @endif
-                                        </div>
-                                        @if (!empty($dataDaftarPoliRJ['sep']['noSep']))
-                                            <div
-                                                class="flex items-center gap-2 px-3 py-2 mt-1 text-sm border border-blue-200 rounded-lg bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
-                                                <svg class="w-5 h-5 text-blue-500" fill="none"
-                                                    stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                <div class="flex-1">
-                                                    <span
-                                                        class="text-xs font-medium text-blue-700 dark:text-blue-300">SEP
-                                                        Aktif:</span>
-                                                    <span
-                                                        class="ml-2 font-mono text-sm font-semibold text-blue-800 dark:text-blue-200">{{ $dataDaftarPoliRJ['sep']['noSep'] }}</span>
-                                                </div>
-                                                <span
-                                                    class="text-xs text-blue-600 dark:text-blue-400">{{ Carbon::parse($dataDaftarPoliRJ['sep']['resSep']['tglSEP'] ?? now())->format('d/m/Y') }}</span>
-                                            </div>
-                                        @endif
-                                        <livewire:pages::transaksi.rj.daftar-rj.vclaim-rj-actions :initialRjNo="$rjNo ?? null"
-                                            wire:key="vclaim-rj-actions-{{ $rjNo ?? 'new' }}" />
-                                        <div class="grid">
-                                            <x-input-label value="No SEP" />
-                                            <x-text-input wire:model.live="dataDaftarPoliRJ.sep.noSep"
-                                                :disabled="$isFormLocked" x-ref="inputNoSep" />
-                                            <x-input-error :messages="$errors->get('dataDaftarPoliRJ.sep.noSep')" class="mt-1" />
-                                        </div>
                                     </div>
                                 @endif
                             </div>
@@ -1289,11 +1227,8 @@ new class extends Component {
         </div>
     </x-modal>
 
-    {{-- Cetak SEP --}}
-    <livewire:pages::components.modul-dokumen.b-p-j-s.cetak-sep.cetak-sep wire:key="cetak-sep-rj" />
-
-    {{-- Satu Sehat & iDRG modal embed pindah ke ⚡daftar-rj.blade.php (page level)
-         supaya pola konsisten dengan openRekamMedis/openSatuSehat/openIdrg dispatcher
+    {{-- Satu Sehat modal embed pindah ke ⚡daftar-rj.blade.php (page level)
+         supaya pola konsisten dengan openRekamMedis/openSatuSehat dispatcher
          yang sudah ada di daftar-rj. --}}
 
     {{-- ================================
