@@ -3,8 +3,11 @@
 use Livewire\Component;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Reactive;
+use App\Http\Traits\BPJS\PcareTrait;
 
 new class extends Component {
+    use PcareTrait;
+
     /** target untuk membedakan LOV ini dipakai di form mana */
     public string $target = 'default';
 
@@ -18,6 +21,9 @@ new class extends Component {
     public bool $isOpen = false;
     public int $selectedIndex = 0;
 
+    /** Sumber data: false = lokal (rsmst_mstdiags), true = BPJS PCare getDiagnosa */
+    public bool $useBpjs = false;
+
     /** selected state (buat mode selected + edit) */
     public ?array $selected = null;
 
@@ -27,6 +33,13 @@ new class extends Component {
      */
     #[Reactive]
     public ?string $initialDiagnosaId = null;
+
+    /**
+     * Fallback deskripsi (mis. icdX dari BPJS yang belum ada di rsmst_mstdiags).
+     * Dipakai kalau lookup lokal gagal supaya edit mode tetap nampilin label.
+     */
+    #[Reactive]
+    public ?string $initialDiagnosaDesc = null;
 
     /**
      * Mode disabled: jika true, tombol "Ubah" akan hilang saat selected.
@@ -59,6 +72,16 @@ new class extends Component {
         }
         if ($row) {
             $this->setSelectedFromRow($row);
+            return;
+        }
+
+        // Fallback: pakai desc dari parent (mis. data BPJS yang belum ada di lokal)
+        if (!empty($this->initialDiagnosaDesc)) {
+            $this->selected = [
+                'diag_id' => (string) $this->initialDiagnosaId,
+                'diag_desc' => (string) $this->initialDiagnosaDesc,
+                'icdx' => (string) $this->initialDiagnosaId,
+            ];
         }
     }
 
@@ -86,6 +109,28 @@ new class extends Component {
             return;
         }
 
+        if ($this->useBpjs) {
+            $this->searchFromBpjs($keyword);
+        } else {
+            $this->searchFromLocal($keyword);
+        }
+    }
+
+    /** Toggle sumber data lokal ↔ BPJS dan re-search */
+    public function toggleSource(): void
+    {
+        $this->useBpjs = !$this->useBpjs;
+        $this->options = [];
+        $this->isOpen = false;
+        $this->selectedIndex = 0;
+
+        if (mb_strlen(trim($this->search)) >= 2) {
+            $this->updatedSearch();
+        }
+    }
+
+    protected function searchFromLocal(string $keyword): void
+    {
         // ===== 1) exact match by diag_id atau icdx =====
         $exactQuery = DB::table('rsmst_mstdiags')->where(function ($q) use ($keyword) {
             $q->where('diag_id', $keyword . 'xxx')->orWhere('icdx', $keyword . 'xxxx');
@@ -123,6 +168,54 @@ new class extends Component {
 
         if ($this->isOpen) {
             $this->dispatch('lov-scroll', id: $this->getId(), index: $this->selectedIndex);
+        }
+    }
+
+    protected function searchFromBpjs(string $keyword): void
+    {
+        try {
+            $resp = $this->getDiagnosa($keyword, 0, 50)->getOriginalContent();
+            $code = $resp['metadata']['code'] ?? 0;
+
+            if ($code != 200) {
+                $msg = $resp['metadata']['message'] ?? "code {$code}";
+                $this->dispatch('toast', type: 'error',
+                    message: 'BPJS getDiagnosa: ' . $msg, title: 'BPJS');
+                $this->closeAndResetList();
+                return;
+            }
+
+            $list = $resp['response']['list'] ?? $resp['response'] ?? [];
+
+            $this->options = collect($list)
+                ->map(function ($row) {
+                    $kd  = (string) ($row['kdDiag'] ?? $row['kode'] ?? '');
+                    $nm  = (string) ($row['nmDiag'] ?? $row['nama'] ?? '');
+                    return [
+                        'diag_id' => $kd,
+                        'diag_desc' => $nm,
+                        'icdx' => $kd,
+                        'label' => $kd ? "{$kd} - {$nm}" : $nm,
+                        'code' => $kd,
+                        'description' => $nm,
+                        'hint' => 'BPJS · Kode: ' . $kd,
+                    ];
+                })
+                ->filter(fn($o) => $o['diag_id'] !== '')
+                ->values()
+                ->toArray();
+
+            $this->isOpen = count($this->options) > 0;
+            $this->selectedIndex = 0;
+
+            if ($this->isOpen) {
+                $this->dispatch('lov-scroll', id: $this->getId(), index: $this->selectedIndex);
+            }
+        } catch (\Exception $e) {
+            \Log::error('lov-diagnosa BPJS search exception', ['error' => $e->getMessage()]);
+            $this->dispatch('toast', type: 'error',
+                message: 'Error BPJS: ' . $e->getMessage(), title: 'BPJS');
+            $this->closeAndResetList();
         }
     }
 
@@ -267,6 +360,15 @@ new class extends Component {
 
         if ($row) {
             $this->setSelectedFromRow($row);
+            return;
+        }
+
+        if (!empty($this->initialDiagnosaDesc)) {
+            $this->selected = [
+                'diag_id' => (string) $value,
+                'diag_desc' => (string) $this->initialDiagnosaDesc,
+                'icdx' => (string) $value,
+            ];
         }
     }
 
@@ -288,7 +390,19 @@ new class extends Component {
 ?>
 
 <x-lov.dropdown :id="$this->getId()" :isOpen="$isOpen" :selectedIndex="$selectedIndex" close="close">
-    <x-input-label :value="$label" />
+    <div class="flex items-center justify-between">
+        <x-input-label :value="$label" />
+        @if ($selected === null && !$disabled)
+            <button type="button" wire:click.prevent="toggleSource"
+                class="text-xs px-2 py-0.5 rounded-md border transition
+                    {{ $useBpjs
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-700 dark:text-emerald-300'
+                        : 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300' }}"
+                title="Toggle sumber: lokal / BPJS PCare">
+                {{ $useBpjs ? 'Sumber: BPJS' : 'Sumber: Lokal' }}
+            </button>
+        @endif
+    </div>
 
     <div class="relative mt-1">
         @if ($selected === null)
@@ -298,6 +412,10 @@ new class extends Component {
                     wire:keydown.escape.prevent="resetLov" wire:keydown.arrow-down.prevent="selectNext"
                     wire:keydown.arrow-up.prevent="selectPrevious" wire:keydown.enter.prevent="chooseHighlighted"
                     autocomplete="off" />
+                <div wire:loading wire:target="search,toggleSource"
+                    class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Mencari{{ $useBpjs ? ' di BPJS' : '' }}...
+                </div>
             @else
                 <x-text-input type="text" class="block w-full bg-gray-100 cursor-not-allowed dark:bg-gray-800"
                     :placeholder="$placeholder" disabled />

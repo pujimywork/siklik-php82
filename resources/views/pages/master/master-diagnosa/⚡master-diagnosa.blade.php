@@ -5,9 +5,10 @@ use Livewire\WithPagination;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Illuminate\Support\Facades\DB;
+use App\Http\Traits\BPJS\PcareTrait;
 
 new class extends Component {
-    use WithPagination;
+    use WithPagination, PcareTrait;
 
     /* -------------------------
      | Filter & Pagination state
@@ -44,6 +45,76 @@ new class extends Component {
     public function requestDelete(string $diagId): void
     {
         $this->dispatch('master.diagnosa.requestDelete', diagId: $diagId);
+    }
+
+    /* -------------------------
+     | Import diagnosa BPJS PCare berdasarkan keyword
+     | (kdDiag/nmDiag → upsert ke rsmst_mstdiags via icdx)
+     * ------------------------- */
+    public function importBpjs(): void
+    {
+        $keyword = trim($this->searchKeyword);
+        if (mb_strlen($keyword) < 2) {
+            $this->dispatch('toast', type: 'warning',
+                message: 'Isi kata kunci pencarian dulu (min. 2 karakter).',
+                title: 'Import BPJS');
+            return;
+        }
+
+        try {
+            $resp = $this->getDiagnosa($keyword, 0, 100)->getOriginalContent();
+            $code = $resp['metadata']['code'] ?? 0;
+
+            if ($code != 200) {
+                $msg = $resp['metadata']['message'] ?? "code {$code}";
+                $this->dispatch('toast', type: 'error',
+                    message: 'BPJS getDiagnosa: ' . $msg, title: 'BPJS Import');
+                return;
+            }
+
+            $list = $resp['response']['list'] ?? $resp['response'] ?? [];
+            if (!is_array($list) || empty($list)) {
+                $this->dispatch('toast', type: 'warning',
+                    message: 'BPJS tidak mengembalikan diagnosa untuk keyword tersebut.',
+                    title: 'BPJS Import');
+                return;
+            }
+
+            $inserted = 0;
+            $skipped = 0;
+
+            foreach ($list as $row) {
+                $kd = (string) ($row['kdDiag'] ?? $row['kode'] ?? '');
+                $nm = (string) ($row['nmDiag'] ?? $row['nama'] ?? '');
+                if ($kd === '' || $nm === '') { $skipped++; continue; }
+
+                $exists = DB::table('rsmst_mstdiags')->where('icdx', $kd)->exists();
+                if ($exists) { $skipped++; continue; }
+
+                // Generate diag_id baru: NUMBER(MAX)+1 (kalau diag_id numeric); fallback pakai icdx
+                $maxId = (int) DB::table('rsmst_mstdiags')
+                    ->whereRaw("REGEXP_LIKE(diag_id, '^\\d+$')")
+                    ->max(DB::raw('TO_NUMBER(diag_id)'));
+                $newId = (string) (($maxId ?: 0) + 1);
+
+                DB::table('rsmst_mstdiags')->insert([
+                    'diag_id'   => $newId,
+                    'icdx'      => $kd,
+                    'diag_desc' => $nm,
+                ]);
+                $inserted++;
+            }
+
+            $this->dispatch('toast', type: 'success',
+                message: "Import BPJS selesai. Inserted: {$inserted}, Skipped (sudah ada / data invalid): {$skipped}",
+                title: 'BPJS Import', duration: 6000);
+
+            $this->resetPage();
+        } catch (\Exception $e) {
+            \Log::error('Master-diagnosa importBpjs exception', ['error' => $e->getMessage()]);
+            $this->dispatch('toast', type: 'error',
+                message: 'Error: ' . $e->getMessage(), title: 'BPJS Error');
+        }
     }
 
     /* -------------------------
@@ -130,6 +201,13 @@ new class extends Component {
                                 <option value="100">100</option>
                             </x-select-input>
                         </div>
+
+                        <x-secondary-button type="button" wire:click="importBpjs"
+                            wire:loading.attr="disabled" wire:target="importBpjs"
+                            title="Import diagnosa dari BPJS PCare berdasarkan kata kunci pencarian">
+                            <span wire:loading.remove wire:target="importBpjs">Import BPJS</span>
+                            <span wire:loading wire:target="importBpjs">Importing...</span>
+                        </x-secondary-button>
 
                         <x-primary-button type="button" wire:click="openCreate">
                             + Tambah Data Diagnosa Baru
