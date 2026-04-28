@@ -49,10 +49,20 @@
             ['label' => 'Laboratorium',      'route' => 'transaksi.penunjang.laborat'],
             ['label' => 'Penerimaan Medis',  'route' => 'gudang.penerimaan-medis'],
         ],
+        'Master Wilayah (RS)' => [
+            ['label' => 'Master Provinsi',  'route' => 'master.provinsi'],
+            ['label' => 'Master Kabupaten', 'route' => 'master.kabupaten'],
+            ['label' => 'Master Kecamatan', 'route' => 'master.kecamatan'],
+            ['label' => 'Master Desa',      'route' => 'master.desa'],
+        ],
         'Master Toko/Apotek' => [
-            ['label' => 'Master Kategori', 'route' => 'master.kategori'],
-            ['label' => 'Master Satuan (UOM)', 'route' => 'master.uom'],
-            ['label' => 'Master Kasir',    'route' => 'master.kasir'],
+            ['label' => 'Master Kategori',         'route' => 'master.kategori'],
+            ['label' => 'Master Satuan (UOM)',     'route' => 'master.uom'],
+            ['label' => 'Master Kasir',            'route' => 'master.kasir'],
+            ['label' => 'Master Provinsi (Toko)',  'route' => 'master.prov-toko'],
+            ['label' => 'Master Kota (Toko)',      'route' => 'master.kota-toko'],
+            ['label' => 'Master Supplier',         'route' => 'master.supplier'],
+            ['label' => 'Master Customer',         'route' => 'master.customer'],
         ],
         'Keuangan' => [
             ['label' => 'Penerimaan Kas TU',  'route' => 'keuangan.penerimaan-kas-tu'],

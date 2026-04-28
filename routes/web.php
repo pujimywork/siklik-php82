@@ -65,6 +65,21 @@ Route::middleware(['auth'])->group(function () {
     Route::livewire('/master/kemasan', 'pages::master.master-kemasan.master-kemasan')
         ->name('master.kemasan');
 
+    // ===========================================
+    // MASTER WILAYAH RS (RSMST_*)
+    // ===========================================
+    Route::livewire('/master/provinsi', 'pages::master.master-provinsi.master-provinsi')
+        ->name('master.provinsi');
+
+    Route::livewire('/master/kabupaten', 'pages::master.master-kabupaten.master-kabupaten')
+        ->name('master.kabupaten');
+
+    Route::livewire('/master/kecamatan', 'pages::master.master-kecamatan.master-kecamatan')
+        ->name('master.kecamatan');
+
+    Route::livewire('/master/desa', 'pages::master.master-desa.master-desa')
+        ->name('master.desa');
+
     Route::livewire('/master/jasa-dokter', 'pages::master.master-jasa-dokter.master-jasa-dokter')
         ->name('master.jasa-dokter');
 
@@ -85,6 +100,18 @@ Route::middleware(['auth'])->group(function () {
 
     Route::livewire('/master/kasir', 'pages::master.master-kasir.master-kasir')
         ->name('master.kasir');
+
+    Route::livewire('/master/prov-toko', 'pages::master.master-prov-toko.master-prov-toko')
+        ->name('master.prov-toko');
+
+    Route::livewire('/master/kota-toko', 'pages::master.master-kota-toko.master-kota-toko')
+        ->name('master.kota-toko');
+
+    Route::livewire('/master/supplier', 'pages::master.master-supplier.master-supplier')
+        ->name('master.supplier');
+
+    Route::livewire('/master/customer', 'pages::master.master-customer.master-customer')
+        ->name('master.customer');
 
     Route::livewire('/master/others', 'pages::master.master-others.master-others')
         ->name('master.others');
