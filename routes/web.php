@@ -74,6 +74,18 @@ Route::middleware(['auth'])->group(function () {
     Route::livewire('/master/jasa-paramedis', 'pages::master.master-jasa-paramedis.master-jasa-paramedis')
         ->name('master.jasa-paramedis');
 
+    // ===========================================
+    // MASTER TOKO / APOTEK (TKMST_*)
+    // ===========================================
+    Route::livewire('/master/kategori', 'pages::master.master-kategori.master-kategori')
+        ->name('master.kategori');
+
+    Route::livewire('/master/uom', 'pages::master.master-uom.master-uom')
+        ->name('master.uom');
+
+    Route::livewire('/master/kasir', 'pages::master.master-kasir.master-kasir')
+        ->name('master.kasir');
+
     Route::livewire('/master/others', 'pages::master.master-others.master-others')
         ->name('master.others');
 

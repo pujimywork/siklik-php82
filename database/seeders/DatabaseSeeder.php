@@ -30,6 +30,9 @@ class DatabaseSeeder extends Seeder
             RsmstAccdocSeeder::class,
             RsmstActempSeeder::class,
             RsmstActparamedicSeeder::class,
+            TkmstCategorySeeder::class,
+            TkmstUomSeeder::class,
+            TkmstKasirSeeder::class,
         ]);
     }
 }

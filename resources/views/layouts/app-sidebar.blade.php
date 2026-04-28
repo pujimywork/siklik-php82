@@ -45,6 +45,11 @@
             ['label' => 'Laboratorium',      'route' => 'transaksi.penunjang.laborat'],
             ['label' => 'Penerimaan Medis',  'route' => 'gudang.penerimaan-medis'],
         ],
+        'Master Toko/Apotek' => [
+            ['label' => 'Master Kategori', 'route' => 'master.kategori'],
+            ['label' => 'Master Satuan (UOM)', 'route' => 'master.uom'],
+            ['label' => 'Master Kasir',    'route' => 'master.kasir'],
+        ],
         'Keuangan' => [
             ['label' => 'Penerimaan Kas TU',  'route' => 'keuangan.penerimaan-kas-tu'],
             ['label' => 'Pengeluaran Kas TU', 'route' => 'keuangan.pengeluaran-kas-tu'],
