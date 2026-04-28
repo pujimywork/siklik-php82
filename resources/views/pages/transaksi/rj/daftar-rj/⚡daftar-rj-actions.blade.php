@@ -10,9 +10,10 @@ use Carbon\Carbon;
 use App\Http\Traits\Txn\Rj\EmrRJTrait;
 use App\Http\Traits\Master\MasterPasien\MasterPasienTrait;
 use App\Http\Traits\WithRenderVersioning\WithRenderVersioningTrait;
+use App\Http\Traits\BPJS\PcareTrait;
 
 new class extends Component {
-    use EmrRJTrait, MasterPasienTrait, WithRenderVersioningTrait;
+    use EmrRJTrait, MasterPasienTrait, WithRenderVersioningTrait, PcareTrait;
 
     public string $formMode = 'create';
     public bool $isFormLocked = false;
@@ -342,11 +343,258 @@ new class extends Component {
 
         $this->syncFromDataDaftarPoliRJ();
 
-        $noSep = $this->dataDaftarPoliRJ['sep']['noSep'] ?? '';
-        $sepInfo = $noSep ? " | SEP: {$noSep}" : '';
-
-        $this->dispatch('toast', type: 'success', message: $message . $sepInfo);
+        $this->dispatch('toast', type: 'success', message: $message);
         $this->dispatch('refresh-after-rj.saved');
+
+        // Kirim ke BPJS PCare kalau klaim BPJS — silent skip kalau belum lengkap
+        $this->pushPendaftaranBPJS();
+    }
+
+    /* ===============================
+     | PCARE — Kirim Pendaftaran ke BPJS (klinik pratama)
+     |
+     | Trigger setelah save sukses (dari afterSave) atau via event
+     | external 'rj.pcare.push-pendaftaran' (rjNo).
+     | Silent skip kalau klaim bukan BPJS atau vital signs belum lengkap.
+     =============================== */
+    #[On('rj.pcare.push-pendaftaran')]
+    public function pushPendaftaranByRjNo(string $rjNo): void
+    {
+        $this->rjNo = $rjNo;
+        $rjData = $this->findDataRJ($rjNo);
+        if (!$rjData) return;
+        $this->dataDaftarPoliRJ = $rjData;
+        $this->dataPasien = $this->getMasterPasien($rjData['regNo'] ?? '') ?? [];
+        $this->pushPendaftaranBPJS();
+    }
+
+    private function pushPendaftaranBPJS(): void
+    {
+        if (($this->dataDaftarPoliRJ['klaimId'] ?? '') !== 'JM') {
+            return; // Bukan BPJS, skip
+        }
+
+        $rjNo = $this->dataDaftarPoliRJ['rjNo'] ?? null;
+        if (!$rjNo) return;
+
+        // Skip kalau sudah pernah berhasil
+        $sentCode = $this->dataDaftarPoliRJ['taskIdPelayanan']['pcarePendaftaran']['code'] ?? '';
+        if ($sentCode == 200 || $sentCode == 201) {
+            \Log::info('PCare addPedaftaran skipped — already sent', ['rjNo' => $rjNo, 'code' => $sentCode]);
+            return;
+        }
+
+        // Build vital signs dari pemeriksaanFisik (perawat) dgn fallback tandaVital
+        $pf = $this->dataDaftarPoliRJ['pemeriksaanFisik']
+            ?? $this->dataDaftarPoliRJ['tandaVital']
+            ?? [];
+
+        $sistole  = (int) ($pf['sistole']  ?? 0);
+        $diastole = (int) ($pf['diastole'] ?? 0);
+        $nadi     = (int) ($pf['nadi']     ?? 0);
+        $rr       = (int) ($pf['rr'] ?? $pf['respirasi'] ?? 0);
+        $bb       = (int) ($pf['beratBadan']  ?? 0);
+        $tb       = (int) ($pf['tinggiBadan'] ?? 0);
+        $lp       = (int) ($pf['lingkarPerut'] ?? 0);
+
+        // Skip kalau vital signs belum lengkap (perawat belum input pemeriksaan)
+        if ($sistole === 0 || $diastole === 0 || $nadi === 0 || $rr === 0) {
+            \Log::info('PCare addPedaftaran skipped — vital signs belum lengkap', [
+                'rjNo' => $rjNo,
+                'sistole' => $sistole,
+                'diastole' => $diastole,
+                'nadi' => $nadi,
+                'rr' => $rr,
+            ]);
+            return;
+        }
+
+        $rjDate  = Carbon::createFromFormat('d/m/Y H:i:s', $this->dataDaftarPoliRJ['rjDate']);
+        $noKartu = preg_replace('/\D/', '', $this->dataPasien['pasien']['identitas']['nokartuBpjs'] ?? '');
+        $keluhan = $this->dataDaftarPoliRJ['anamnesa']['keluhanUtama']
+            ?? $this->dataDaftarPoliRJ['anamnesa']['anamnesa']
+            ?? '-';
+
+        $payload = [
+            'kdProviderPeserta' => env('PCARE_PROVIDER'),
+            'tglDaftar'    => $rjDate->format('d-m-Y'),
+            'noKartu'      => $noKartu,
+            'kdPoli'       => $this->dataDaftarPoliRJ['kdpolibpjs'] ?? '',
+            'keluhan'      => $keluhan,
+            'kunjSakit'    => 1, // 1=sakit, 0=checkup
+            'sistole'      => $sistole,
+            'diastole'     => $diastole,
+            'beratBadan'   => $bb,
+            'tinggiBadan'  => $tb,
+            'respRate'     => $rr,
+            'lingkarPerut' => $lp,
+            'heartRate'    => $nadi,
+            'rujukBalik'   => 'N',
+            'kdTkp'        => '10', // 10=RJTP klinik pratama
+        ];
+
+        try {
+            \Log::info('PCare addPedaftaran request', ['rjNo' => $rjNo, 'payload' => $payload]);
+            $response = $this->addPedaftaran($payload)->getOriginalContent();
+            $code = $response['metadata']['code'] ?? 0;
+            $msg  = $response['metadata']['message'] ?? '';
+
+            // Simpan status ke JSON
+            $rjData = $this->findDataRJ($rjNo) ?: [];
+            $rjData['taskIdPelayanan'] ??= [];
+            $rjData['taskIdPelayanan']['pcarePendaftaran'] = [
+                'code'    => $code,
+                'message' => $msg,
+                'sentAt'  => now()->format('Y-m-d H:i:s'),
+                'response'=> $response['response'] ?? null,
+            ];
+            DB::transaction(function () use ($rjNo, $rjData) {
+                $this->lockRJRow($rjNo);
+                $this->updateJsonRJ($rjNo, $rjData);
+            });
+
+            $isOk = $code == 200 || $code == 201;
+            $this->dispatch('toast',
+                type: $isOk ? 'success' : 'warning',
+                message: 'PCare Pendaftaran: ' . $msg,
+                title: $isOk ? 'BPJS Berhasil' : 'BPJS Gagal',
+                duration: 6000
+            );
+        } catch (\Exception $e) {
+            \Log::error('PCare addPedaftaran exception', ['rjNo' => $rjNo, 'error' => $e->getMessage()]);
+            $this->dispatch('toast', type: 'error', message: 'Error PCare: ' . $e->getMessage(), title: 'BPJS Error');
+        }
+    }
+
+    /* ===============================
+     | PCARE — Kirim Kunjungan ke BPJS
+     |
+     | Trigger setelah dokter selesai diagnosa+perencanaan, via event
+     | 'rj.pcare.push-kunjungan' dgn rjNo. Build payload dari diagnosa
+     | + terapi + vital signs di JSON.
+     =============================== */
+    #[On('rj.pcare.push-kunjungan')]
+    public function pushKunjunganByRjNo(string $rjNo): void
+    {
+        $this->rjNo = $rjNo;
+        $rjData = $this->findDataRJ($rjNo);
+        if (!$rjData) return;
+        $this->dataDaftarPoliRJ = $rjData;
+        $this->dataPasien = $this->getMasterPasien($rjData['regNo'] ?? '') ?? [];
+        $this->pushKunjunganBPJS();
+    }
+
+    private function pushKunjunganBPJS(): void
+    {
+        if (($this->dataDaftarPoliRJ['klaimId'] ?? '') !== 'JM') {
+            return;
+        }
+
+        $rjNo = $this->dataDaftarPoliRJ['rjNo'] ?? null;
+        if (!$rjNo) return;
+
+        // Wajib: pendaftaran sudah sukses dulu
+        $pendaftaranCode = $this->dataDaftarPoliRJ['taskIdPelayanan']['pcarePendaftaran']['code'] ?? '';
+        if ($pendaftaranCode != 200 && $pendaftaranCode != 201) {
+            $this->dispatch('toast', type: 'warning',
+                message: 'Kirim Pendaftaran BPJS dulu sebelum kirim Kunjungan.',
+                title: 'BPJS Pendaftaran Belum');
+            return;
+        }
+
+        // Skip kalau sudah berhasil
+        $kunjunganCode = $this->dataDaftarPoliRJ['taskIdPelayanan']['pcareKunjungan']['code'] ?? '';
+        if ($kunjunganCode == 200 || $kunjunganCode == 201) {
+            \Log::info('PCare addKunjungan skipped — already sent', ['rjNo' => $rjNo]);
+            return;
+        }
+
+        $diagnosa  = $this->dataDaftarPoliRJ['diagnosis'] ?? [];
+        $kdDiag1   = $diagnosa[0]['icdX'] ?? '';
+        $kdDiag2   = $diagnosa[1]['icdX'] ?? null;
+        $kdDiag3   = $diagnosa[2]['icdX'] ?? null;
+
+        if (!$kdDiag1) {
+            $this->dispatch('toast', type: 'warning',
+                message: 'Diagnosa primer wajib diisi sebelum kirim Kunjungan.',
+                title: 'Diagnosa Belum');
+            return;
+        }
+
+        $pf = $this->dataDaftarPoliRJ['pemeriksaanFisik']
+            ?? $this->dataDaftarPoliRJ['tandaVital']
+            ?? [];
+
+        $rjDate  = Carbon::createFromFormat('d/m/Y H:i:s', $this->dataDaftarPoliRJ['rjDate']);
+        $noKartu = preg_replace('/\D/', '', $this->dataPasien['pasien']['identitas']['nokartuBpjs'] ?? '');
+        $perencanaan = $this->dataDaftarPoliRJ['perencanaan'] ?? [];
+        $anamnesa    = $this->dataDaftarPoliRJ['anamnesa'] ?? [];
+
+        $payload = [
+            'noKunjungan'  => 'RJ-' . $rjNo, // unique visit number (klinik internal)
+            'noKartu'      => $noKartu,
+            'tglDaftar'    => $rjDate->format('d-m-Y'),
+            'kdPoli'       => $this->dataDaftarPoliRJ['kdpolibpjs'] ?? '',
+            'keluhan'      => $anamnesa['keluhanUtama'] ?? '-',
+            'kdSadar'      => $pf['kdSadar'] ?? '01', // 01=Compos Mentis default
+            'sistole'      => (int) ($pf['sistole'] ?? 0),
+            'diastole'     => (int) ($pf['diastole'] ?? 0),
+            'beratBadan'   => (int) ($pf['beratBadan'] ?? 0),
+            'tinggiBadan'  => (int) ($pf['tinggiBadan'] ?? 0),
+            'respRate'     => (int) ($pf['rr'] ?? $pf['respirasi'] ?? 0),
+            'heartRate'    => (int) ($pf['nadi'] ?? 0),
+            'lingkarPerut' => (int) ($pf['lingkarPerut'] ?? 0),
+            'kdStatusPulang' => $perencanaan['kdStatusPulang'] ?? '4', // 4=Berobat Jalan
+            'tglPulang'    => Carbon::now()->format('d-m-Y'),
+            'kdDokter'     => $this->dataDaftarPoliRJ['kddrbpjs'] ?? '',
+            'kdDiag1'      => $kdDiag1,
+            'kdDiag2'      => $kdDiag2,
+            'kdDiag3'      => $kdDiag3,
+            'kdPoliRujukInternal' => null,
+            'rujukLanjut'  => null, // null = tidak rujuk lanjut
+            'kdTacc'       => -1, // -1 = tidak ada TACC
+            'alasanTacc'   => '',
+            'anamnesa'     => $anamnesa['anamnesa'] ?? $anamnesa['keluhanUtama'] ?? '-',
+            'alergiMakan'  => $anamnesa['alergiMakan'] ?? '00',
+            'alergiUdara'  => $anamnesa['alergiUdara'] ?? '00',
+            'alergiObat'   => $anamnesa['alergiObat'] ?? '00',
+            'kdPrognosa'   => $perencanaan['kdPrognosa'] ?? '01', // 01=Sanam (sembuh)
+            'terapiObat'   => $perencanaan['terapiObat'] ?? '-',
+            'terapiNonObat'=> $perencanaan['terapiNonObat'] ?? '',
+            'bmhp'         => $perencanaan['bmhp'] ?? '',
+            'suhu'         => (string) ($pf['suhu'] ?? '36.5'),
+        ];
+
+        try {
+            \Log::info('PCare addKunjungan request', ['rjNo' => $rjNo, 'payload' => $payload]);
+            $response = $this->addKunjungan($payload)->getOriginalContent();
+            $code = $response['metadata']['code'] ?? 0;
+            $msg  = $response['metadata']['message'] ?? '';
+
+            $rjData = $this->findDataRJ($rjNo) ?: [];
+            $rjData['taskIdPelayanan'] ??= [];
+            $rjData['taskIdPelayanan']['pcareKunjungan'] = [
+                'code'    => $code,
+                'message' => $msg,
+                'sentAt'  => now()->format('Y-m-d H:i:s'),
+                'response'=> $response['response'] ?? null,
+            ];
+            DB::transaction(function () use ($rjNo, $rjData) {
+                $this->lockRJRow($rjNo);
+                $this->updateJsonRJ($rjNo, $rjData);
+            });
+
+            $isOk = $code == 200 || $code == 201;
+            $this->dispatch('toast',
+                type: $isOk ? 'success' : 'warning',
+                message: 'PCare Kunjungan: ' . $msg,
+                title: $isOk ? 'BPJS Berhasil' : 'BPJS Gagal',
+                duration: 6000
+            );
+        } catch (\Exception $e) {
+            \Log::error('PCare addKunjungan exception', ['rjNo' => $rjNo, 'error' => $e->getMessage()]);
+            $this->dispatch('toast', type: 'error', message: 'Error PCare: ' . $e->getMessage(), title: 'BPJS Error');
+        }
     }
 
     /* ===============================
