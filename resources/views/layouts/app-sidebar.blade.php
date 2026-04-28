@@ -34,6 +34,7 @@
             ['label' => 'Master Lab',        'route' => 'master.laborat'],
             ['label' => 'Master Others',     'route' => 'master.others'],
             ['label' => 'Setup Jadwal BPJS', 'route' => 'master.setup-jadwal-bpjs'],
+            ['label' => 'Master Alat Medis', 'route' => 'master.medik'],
         ],
         'Rawat Jalan' => [
             ['label' => 'Daftar RJ',  'route' => 'rawat-jalan.daftar'],

@@ -41,6 +41,7 @@ new class extends Component {
             $entry(['group' => 'Master', 'groupOrder' => 1, 'order' => 14, 'route' => 'master.cara-keluar',  'title' => 'Master Cara Keluar',   'desc' => 'Sembuh, rujuk, pulang paksa, dll',                  'roles' => ['admin'], 'badge' => 'Master']),
             $entry(['group' => 'Master', 'groupOrder' => 1, 'order' => 15, 'route' => 'master.parameter',    'title' => 'Master Parameter',     'desc' => 'Parameter sistem & konfigurasi',                    'roles' => ['admin'], 'badge' => 'Master']),
             $entry(['group' => 'Master', 'groupOrder' => 1, 'order' => 16, 'route' => 'master.setup-jadwal-bpjs', 'title' => 'Pemetaan Jadwal Dokter', 'desc' => 'Ambil & terapkan jadwal praktek dokter dari BPJS', 'roles' => ['admin', 'mr'], 'badge' => 'BPJS']),
+            $entry(['group' => 'Master', 'groupOrder' => 1, 'order' => 17, 'route' => 'master.medik',           'title' => 'Master Alat Medis',      'desc' => 'Tracking alat medis (kondisi, sertifikat, izin)', 'roles' => ['admin'], 'badge' => 'Master']),
 
             // ── Master Jasa (Tarif) ───────────────────────────────────
             $entry(['group' => 'Master Jasa', 'groupOrder' => 2, 'order' => 1, 'route' => 'master.jasa-dokter',    'title' => 'Master Jasa Dokter',    'desc' => 'Tarif jasa dokter (ACCDOC) untuk billing',          'roles' => ['admin'], 'badge' => 'Tarif']),

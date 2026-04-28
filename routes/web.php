@@ -116,6 +116,9 @@ Route::middleware(['auth'])->group(function () {
     Route::livewire('/master/product', 'pages::master.master-product.master-product')
         ->name('master.product');
 
+    Route::livewire('/master/medik', 'pages::master.master-medik.master-medik')
+        ->name('master.medik');
+
     Route::livewire('/master/others', 'pages::master.master-others.master-others')
         ->name('master.others');
 
