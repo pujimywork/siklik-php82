@@ -105,11 +105,6 @@ new class extends Component {
         $this->dispatch('daftar-rj.satu-sehat.open', rjNo: $rjNo);
     }
 
-    public function openIdrg(string $rjNo): void
-    {
-        $this->dispatch('daftar-rj.idrg.open', rjNo: $rjNo);
-    }
-
     /* -------------------------
      | Request Delete
      * ------------------------- */
@@ -953,29 +948,7 @@ new class extends Component {
                                                                     </x-dropdown-link>
                                                                 @endrole
 
-                                                                {{-- Kirim iDRG — Admin & Casemix, BPJS + rj_status=Selesai --}}
-                                                                @hasanyrole('Admin|Casemix')
-                                                                    @if (($row->klaim_status === 'BPJS' || $row->klaim_id === 'JM') && $row->rj_status === 'L')
-                                                                        <x-dropdown-link href="#"
-                                                                            wire:click.prevent="openIdrg('{{ $row->rj_no }}')"
-                                                                            class="px-3 py-2 text-sm rounded-lg bg-brand/5 hover:bg-brand/10 dark:bg-brand-lime/10 dark:hover:bg-brand-lime/20">
-                                                                            <div class="flex items-start gap-2">
-                                                                                <svg class="w-5 h-5 mt-0.5 shrink-0"
-                                                                                    fill="none" stroke="currentColor"
-                                                                                    viewBox="0 0 24 24" stroke-width="2">
-                                                                                    <path stroke-linecap="round"
-                                                                                        stroke-linejoin="round"
-                                                                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                                                </svg>
-                                                                                <span>
-                                                                                    Kirim iDRG / INACBG <br>
-                                                                                    <span
-                                                                                        class="font-semibold">{{ $row->reg_name }}</span>
-                                                                                </span>
-                                                                            </div>
-                                                                        </x-dropdown-link>
-                                                                    @endif
-                                                                @endhasanyrole
+                                                                {{-- Kirim iDRG dihapus — klinik pratama tidak klaim INACBG --}}
 
                                                             </div>
 
@@ -1037,9 +1010,8 @@ new class extends Component {
             <livewire:pages::transaksi.rj.emr-rj.erm-rj wire:key="rm-perawat-rj-actions" />
             <livewire:pages::transaksi.rj.administrasi-rj.administrasi-rj wire:key="administrasi-rj-actions" />
 
-            {{-- Modal Satu Sehat & iDRG/INACBG (sibling, listen ke event daftar-rj.satu-sehat.open / openIdrg) --}}
+            {{-- Modal Satu Sehat (sibling, listen ke event daftar-rj.satu-sehat.open) --}}
             <livewire:pages::transaksi.rj.daftar-rj.satu-sehat-rj-actions wire:key="satu-sehat-rj-actions" />
-            <livewire:pages::transaksi.rj.daftar-rj.idrg-rj-actions wire:key="idrg-rj-actions" />
 
             {{-- Modul Dokumen RJ --}}
             <livewire:pages::transaksi.rj.emr-rj.modul-dokumen.modul-dokumen-rj wire:key="modul-dokumen-rj" />
