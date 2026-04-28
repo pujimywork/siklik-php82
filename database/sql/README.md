@@ -34,7 +34,8 @@ Jalanin kalau mau aktifkan fitur SatuSehat (kirim data klinis ke Kemenkes via FH
 |---|------|--------|
 | **03** | `03_create_rsmst_snomed_codes.sql` | Create tabel `rsmst_snomed_codes` — cache SNOMED CT dari FHIR server (tx.fhir.org) |
 | **04** | `04_create_rsmst_loinc_codes.sql` | Create tabel `rsmst_loinc_codes` — cache LOINC untuk LOV lab |
-| **05** | `05_alter_lbmst_clabitems_add_loinc.sql` | Tambah kolom `loinc_code` ke `lbmst_clabitems` |
+| **05** | `05_alter_lbmst_clabitems_add_loinc.sql` | Tambah kolom `loinc_code`, `loinc_display`, `low_limit_k`, `high_limit_k` ke `lbmst_clabitems` |
+| **05b** | `05b_alter_lbmst_clabitems_add_kid_range.sql` | Patch: tambah kid range (kalau sudah run versi lama dari 05) |
 | **06** | `06_alter_rsmst_radiologis_add_loinc.sql` | Tambah kolom `loinc_code` ke `rsmst_radiologis` |
 | **07** | `07_seed_rsmst_loinc_codes_radiologi.sql` | Seed data LOINC untuk radiologi |
 | **08** | `08_update_lbmst_clabitems_loinc.sql` | Mapping kode LOINC ke item lab existing |
