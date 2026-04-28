@@ -261,6 +261,8 @@ new class extends Component {
                 $row->task_id3 = $json['taskIdPelayanan']['taskId3'] ?? null;
                 $row->task_id4 = $json['taskIdPelayanan']['taskId4'] ?? null;
                 $row->task_id5 = $json['taskIdPelayanan']['taskId5'] ?? null;
+                $row->pcare_pendaftaran_code = (int) ($json['taskIdPelayanan']['pcarePendaftaran']['code'] ?? 0);
+                $row->pcare_kunjungan_code   = (int) ($json['taskIdPelayanan']['pcareKunjungan']['code'] ?? 0);
                 $row->no_referensi = $json['noReferensi'] ?? null;
 
                 if (isset($json['sep']['reqSep']['request']['t_sep']['rujukan']['tglRujukan'])) {
@@ -987,6 +989,74 @@ new class extends Component {
                                                                                 </svg>
                                                                                 <span>
                                                                                     Kirim Kunjungan BPJS <br>
+                                                                                    <span class="font-semibold">{{ $row->reg_name }}</span>
+                                                                                </span>
+                                                                            </div>
+                                                                        </x-dropdown-link>
+                                                                    @endif
+                                                                @endhasanyrole
+
+                                                                {{-- Riwayat Kunjungan BPJS — semua role medis, asalkan pasien BPJS --}}
+                                                                @hasanyrole('Admin|Dokter|Mr|Perawat')
+                                                                    @if (($row->klaim_status === 'BPJS' || $row->klaim_id === 'JM'))
+                                                                        <x-dropdown-link href="#"
+                                                                            wire:click.prevent="$dispatch('rj.pcare.riwayat-kunjungan', { rjNo: '{{ $row->rj_no }}' })"
+                                                                            class="px-3 py-2 text-sm rounded-lg bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:hover:bg-amber-900/40">
+                                                                            <div class="flex items-start gap-2">
+                                                                                <svg class="w-5 h-5 mt-0.5 shrink-0"
+                                                                                    fill="none" stroke="currentColor"
+                                                                                    viewBox="0 0 24 24" stroke-width="2">
+                                                                                    <path stroke-linecap="round"
+                                                                                        stroke-linejoin="round"
+                                                                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                                </svg>
+                                                                                <span>
+                                                                                    Riwayat Kunjungan BPJS <br>
+                                                                                    <span class="font-semibold">{{ $row->reg_name }}</span>
+                                                                                </span>
+                                                                            </div>
+                                                                        </x-dropdown-link>
+                                                                    @endif
+                                                                @endhasanyrole
+
+                                                                {{-- Edit Kunjungan BPJS — hanya kalau pcareKunjungan sudah berhasil --}}
+                                                                @hasanyrole('Admin|Dokter')
+                                                                    @php
+                                                                        $kunjCode = data_get($row, 'pcare_kunjungan_code')
+                                                                            ?? data_get(json_decode($row->datadaftarpolirj_json ?? '{}', true), 'taskIdPelayanan.pcareKunjungan.code', 0);
+                                                                    @endphp
+                                                                    @if (($row->klaim_status === 'BPJS' || $row->klaim_id === 'JM') && in_array((int) $kunjCode, [200, 201], true))
+                                                                        <x-dropdown-link href="#"
+                                                                            wire:click.prevent="$dispatch('rj.pcare.edit-kunjungan', { rjNo: '{{ $row->rj_no }}' })"
+                                                                            class="px-3 py-2 text-sm rounded-lg bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/20 dark:hover:bg-purple-900/40">
+                                                                            <div class="flex items-start gap-2">
+                                                                                <svg class="w-5 h-5 mt-0.5 shrink-0"
+                                                                                    fill="none" stroke="currentColor"
+                                                                                    viewBox="0 0 24 24" stroke-width="2">
+                                                                                    <path stroke-linecap="round"
+                                                                                        stroke-linejoin="round"
+                                                                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                                                </svg>
+                                                                                <span>
+                                                                                    Edit Kunjungan BPJS <br>
+                                                                                    <span class="font-semibold">{{ $row->reg_name }}</span>
+                                                                                </span>
+                                                                            </div>
+                                                                        </x-dropdown-link>
+
+                                                                        <x-dropdown-link href="#"
+                                                                            wire:click.prevent="$dispatch('rj.pcare.delete-kunjungan', { rjNo: '{{ $row->rj_no }}' })"
+                                                                            class="px-3 py-2 text-sm rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/20 dark:hover:bg-rose-900/40">
+                                                                            <div class="flex items-start gap-2">
+                                                                                <svg class="w-5 h-5 mt-0.5 shrink-0"
+                                                                                    fill="none" stroke="currentColor"
+                                                                                    viewBox="0 0 24 24" stroke-width="2">
+                                                                                    <path stroke-linecap="round"
+                                                                                        stroke-linejoin="round"
+                                                                                        d="M6 7h12M9 7V5a3 3 0 016 0v2m-9 0l1 12h8l1-12" />
+                                                                                </svg>
+                                                                                <span>
+                                                                                    Hapus Kunjungan BPJS <br>
                                                                                     <span class="font-semibold">{{ $row->reg_name }}</span>
                                                                                 </span>
                                                                             </div>

@@ -38,6 +38,13 @@ new class extends Component {
     public string $internal12 = '1';
     public array $internal12Options = [['internal12' => '1', 'internal12Desc' => 'Faskes Tingkat 1'], ['internal12' => '2', 'internal12Desc' => 'Faskes Tingkat 2 RS']];
 
+    /* -------------------------
+     | Riwayat Kunjungan BPJS state
+     * ------------------------- */
+    public bool $showRiwayatBpjs = false;
+    public array $riwayatBpjsList = [];
+    public string $riwayatBpjsTitle = '';
+
     /* ===============================
      | MOUNT
      =============================== */
@@ -509,61 +516,8 @@ new class extends Component {
             return;
         }
 
-        $diagnosa  = $this->dataDaftarPoliRJ['diagnosis'] ?? [];
-        $kdDiag1   = $diagnosa[0]['icdX'] ?? '';
-        $kdDiag2   = $diagnosa[1]['icdX'] ?? null;
-        $kdDiag3   = $diagnosa[2]['icdX'] ?? null;
-
-        if (!$kdDiag1) {
-            $this->dispatch('toast', type: 'warning',
-                message: 'Diagnosa primer wajib diisi sebelum kirim Kunjungan.',
-                title: 'Diagnosa Belum');
-            return;
-        }
-
-        $pf = $this->dataDaftarPoliRJ['pemeriksaanFisik']
-            ?? $this->dataDaftarPoliRJ['tandaVital']
-            ?? [];
-
-        $rjDate  = Carbon::createFromFormat('d/m/Y H:i:s', $this->dataDaftarPoliRJ['rjDate']);
-        $noKartu = preg_replace('/\D/', '', $this->dataPasien['pasien']['identitas']['nokartuBpjs'] ?? '');
-        $perencanaan = $this->dataDaftarPoliRJ['perencanaan'] ?? [];
-        $anamnesa    = $this->dataDaftarPoliRJ['anamnesa'] ?? [];
-
-        $payload = [
-            'noKunjungan'  => 'RJ-' . $rjNo, // unique visit number (klinik internal)
-            'noKartu'      => $noKartu,
-            'tglDaftar'    => $rjDate->format('d-m-Y'),
-            'kdPoli'       => $this->dataDaftarPoliRJ['kdpolibpjs'] ?? '',
-            'keluhan'      => $anamnesa['keluhanUtama'] ?? '-',
-            'kdSadar'      => $pf['kdSadar'] ?? '01', // 01=Compos Mentis default
-            'sistole'      => (int) ($pf['sistole'] ?? 0),
-            'diastole'     => (int) ($pf['diastole'] ?? 0),
-            'beratBadan'   => (int) ($pf['beratBadan'] ?? 0),
-            'tinggiBadan'  => (int) ($pf['tinggiBadan'] ?? 0),
-            'respRate'     => (int) ($pf['rr'] ?? $pf['respirasi'] ?? 0),
-            'heartRate'    => (int) ($pf['nadi'] ?? 0),
-            'lingkarPerut' => (int) ($pf['lingkarPerut'] ?? 0),
-            'kdStatusPulang' => $perencanaan['kdStatusPulang'] ?? '4', // 4=Berobat Jalan
-            'tglPulang'    => Carbon::now()->format('d-m-Y'),
-            'kdDokter'     => $this->dataDaftarPoliRJ['kddrbpjs'] ?? '',
-            'kdDiag1'      => $kdDiag1,
-            'kdDiag2'      => $kdDiag2,
-            'kdDiag3'      => $kdDiag3,
-            'kdPoliRujukInternal' => null,
-            'rujukLanjut'  => null, // null = tidak rujuk lanjut
-            'kdTacc'       => -1, // -1 = tidak ada TACC
-            'alasanTacc'   => '',
-            'anamnesa'     => $anamnesa['anamnesa'] ?? $anamnesa['keluhanUtama'] ?? '-',
-            'alergiMakan'  => $anamnesa['alergiMakan'] ?? '00',
-            'alergiUdara'  => $anamnesa['alergiUdara'] ?? '00',
-            'alergiObat'   => $anamnesa['alergiObat'] ?? '00',
-            'kdPrognosa'   => $perencanaan['kdPrognosa'] ?? '01', // 01=Sanam (sembuh)
-            'terapiObat'   => $perencanaan['terapiObat'] ?? '-',
-            'terapiNonObat'=> $perencanaan['terapiNonObat'] ?? '',
-            'bmhp'         => $perencanaan['bmhp'] ?? '',
-            'suhu'         => (string) ($pf['suhu'] ?? '36.5'),
-        ];
+        $payload = $this->buildKunjunganPayload($rjNo);
+        if ($payload === null) return;
 
         try {
             \Log::info('PCare addKunjungan request', ['rjNo' => $rjNo, 'payload' => $payload]);
@@ -595,6 +549,253 @@ new class extends Component {
             \Log::error('PCare addKunjungan exception', ['rjNo' => $rjNo, 'error' => $e->getMessage()]);
             $this->dispatch('toast', type: 'error', message: 'Error PCare: ' . $e->getMessage(), title: 'BPJS Error');
         }
+    }
+
+    /* ===============================
+     | PCARE — Riwayat Kunjungan BPJS
+     |
+     | Trigger via event 'rj.pcare.riwayat-kunjungan' dgn rjNo.
+     | Ambil noKartu dari master pasien lalu panggil getRiwayatKunjungan.
+     =============================== */
+    #[On('rj.pcare.riwayat-kunjungan')]
+    public function showRiwayatKunjunganByRjNo(string $rjNo): void
+    {
+        $rjData = $this->findDataRJ($rjNo);
+        if (!$rjData) {
+            $this->dispatch('toast', type: 'error', message: 'Data RJ tidak ditemukan.');
+            return;
+        }
+
+        $pasien  = $this->getMasterPasien($rjData['regNo'] ?? '') ?? [];
+        $noKartu = preg_replace('/\D/', '', $pasien['pasien']['identitas']['nokartuBpjs'] ?? '');
+        $nama    = $pasien['pasien']['regName'] ?? ($rjData['regName'] ?? '');
+
+        if (strlen($noKartu) !== 13) {
+            $this->dispatch('toast', type: 'warning',
+                message: 'No. Kartu BPJS pasien belum diisi (atau bukan 13 digit).',
+                title: 'BPJS Riwayat');
+            return;
+        }
+
+        try {
+            $resp = $this->getRiwayatKunjungan($noKartu)->getOriginalContent();
+            $code = $resp['metadata']['code'] ?? 0;
+
+            if ($code != 200) {
+                $msg = $resp['metadata']['message'] ?? "code {$code}";
+                $this->dispatch('toast', type: 'error',
+                    message: 'BPJS getRiwayatKunjungan: ' . $msg,
+                    title: 'BPJS Riwayat');
+                return;
+            }
+
+            $list = $resp['response']['list'] ?? $resp['response'] ?? [];
+            $this->riwayatBpjsList = is_array($list) ? array_values($list) : [];
+            $this->riwayatBpjsTitle = trim("Riwayat Kunjungan BPJS — {$nama} ({$noKartu})");
+            $this->showRiwayatBpjs = true;
+            $this->dispatch('open-modal', name: 'rj-riwayat-bpjs');
+        } catch (\Exception $e) {
+            \Log::error('PCare getRiwayatKunjungan exception', ['rjNo' => $rjNo, 'error' => $e->getMessage()]);
+            $this->dispatch('toast', type: 'error',
+                message: 'Error PCare: ' . $e->getMessage(), title: 'BPJS Error');
+        }
+    }
+
+    public function closeRiwayatBpjs(): void
+    {
+        $this->showRiwayatBpjs = false;
+        $this->riwayatBpjsList = [];
+        $this->riwayatBpjsTitle = '';
+        $this->dispatch('close-modal', name: 'rj-riwayat-bpjs');
+    }
+
+    /* ===============================
+     | PCARE — Edit Kunjungan BPJS (revisi yg sudah dikirim)
+     |
+     | Trigger via event 'rj.pcare.edit-kunjungan' dgn rjNo.
+     | Wajib: pcareKunjungan.code sudah 200/201 sebelumnya.
+     =============================== */
+    #[On('rj.pcare.edit-kunjungan')]
+    public function editKunjunganByRjNo(string $rjNo): void
+    {
+        $this->rjNo = $rjNo;
+        $rjData = $this->findDataRJ($rjNo);
+        if (!$rjData) return;
+        $this->dataDaftarPoliRJ = $rjData;
+        $this->dataPasien = $this->getMasterPasien($rjData['regNo'] ?? '') ?? [];
+        $this->editKunjunganBPJS();
+    }
+
+    private function editKunjunganBPJS(): void
+    {
+        if (($this->dataDaftarPoliRJ['klaimId'] ?? '') !== 'JM') return;
+
+        $rjNo = $this->dataDaftarPoliRJ['rjNo'] ?? null;
+        if (!$rjNo) return;
+
+        $kunjunganCode = $this->dataDaftarPoliRJ['taskIdPelayanan']['pcareKunjungan']['code'] ?? '';
+        if ($kunjunganCode != 200 && $kunjunganCode != 201) {
+            $this->dispatch('toast', type: 'warning',
+                message: 'Kunjungan belum pernah dikirim sukses. Pakai "Kirim Kunjungan BPJS" dulu.',
+                title: 'BPJS Edit');
+            return;
+        }
+
+        $payload = $this->buildKunjunganPayload($rjNo);
+        if ($payload === null) return; // toast sudah di-dispatch
+
+        try {
+            \Log::info('PCare editKunjungan request', ['rjNo' => $rjNo, 'payload' => $payload]);
+            $response = $this->editKunjungan($payload)->getOriginalContent();
+            $code = $response['metadata']['code'] ?? 0;
+            $msg  = $response['metadata']['message'] ?? '';
+
+            $rjData = $this->findDataRJ($rjNo) ?: [];
+            $rjData['taskIdPelayanan'] ??= [];
+            $rjData['taskIdPelayanan']['pcareKunjungan'] = [
+                'code'    => $code,
+                'message' => $msg,
+                'sentAt'  => now()->format('Y-m-d H:i:s'),
+                'response'=> $response['response'] ?? null,
+                'editedAt'=> now()->format('Y-m-d H:i:s'),
+            ];
+            DB::transaction(function () use ($rjNo, $rjData) {
+                $this->lockRJRow($rjNo);
+                $this->updateJsonRJ($rjNo, $rjData);
+            });
+
+            $isOk = $code == 200 || $code == 201;
+            $this->dispatch('toast',
+                type: $isOk ? 'success' : 'warning',
+                message: 'PCare Edit Kunjungan: ' . $msg,
+                title: $isOk ? 'BPJS Berhasil' : 'BPJS Gagal',
+                duration: 6000);
+        } catch (\Exception $e) {
+            \Log::error('PCare editKunjungan exception', ['rjNo' => $rjNo, 'error' => $e->getMessage()]);
+            $this->dispatch('toast', type: 'error', message: 'Error PCare: ' . $e->getMessage(), title: 'BPJS Error');
+        }
+    }
+
+    /* ===============================
+     | PCARE — Hapus Kunjungan BPJS
+     |
+     | Trigger via event 'rj.pcare.delete-kunjungan' dgn rjNo.
+     | Wajib: pcareKunjungan.code sudah 200/201 sebelumnya.
+     =============================== */
+    #[On('rj.pcare.delete-kunjungan')]
+    public function deleteKunjunganByRjNo(string $rjNo): void
+    {
+        $this->rjNo = $rjNo;
+        $rjData = $this->findDataRJ($rjNo);
+        if (!$rjData) return;
+        $this->dataDaftarPoliRJ = $rjData;
+
+        $kunjunganCode = $this->dataDaftarPoliRJ['taskIdPelayanan']['pcareKunjungan']['code'] ?? '';
+        if ($kunjunganCode != 200 && $kunjunganCode != 201) {
+            $this->dispatch('toast', type: 'warning',
+                message: 'Kunjungan belum pernah dikirim sukses, tidak bisa dihapus.',
+                title: 'BPJS Hapus');
+            return;
+        }
+
+        $noKunjungan = 'RJ-' . $rjNo;
+
+        try {
+            \Log::info('PCare deleteKunjungan request', ['rjNo' => $rjNo, 'noKunjungan' => $noKunjungan]);
+            $response = $this->deleteKunjungan($noKunjungan)->getOriginalContent();
+            $code = $response['metadata']['code'] ?? 0;
+            $msg  = $response['metadata']['message'] ?? '';
+
+            $rjData = $this->findDataRJ($rjNo) ?: [];
+            $rjData['taskIdPelayanan'] ??= [];
+            $rjData['taskIdPelayanan']['pcareKunjunganDelete'] = [
+                'code'    => $code,
+                'message' => $msg,
+                'sentAt'  => now()->format('Y-m-d H:i:s'),
+                'response'=> $response['response'] ?? null,
+            ];
+            // Reset pcareKunjungan code supaya bisa Kirim ulang
+            if ($code == 200 || $code == 201) {
+                $rjData['taskIdPelayanan']['pcareKunjungan']['code'] = 0;
+                $rjData['taskIdPelayanan']['pcareKunjungan']['message'] = 'Deleted on ' . now()->format('Y-m-d H:i:s');
+            }
+            DB::transaction(function () use ($rjNo, $rjData) {
+                $this->lockRJRow($rjNo);
+                $this->updateJsonRJ($rjNo, $rjData);
+            });
+
+            $isOk = $code == 200 || $code == 201;
+            $this->dispatch('toast',
+                type: $isOk ? 'success' : 'warning',
+                message: 'PCare Hapus Kunjungan: ' . $msg,
+                title: $isOk ? 'BPJS Berhasil' : 'BPJS Gagal',
+                duration: 6000);
+        } catch (\Exception $e) {
+            \Log::error('PCare deleteKunjungan exception', ['rjNo' => $rjNo, 'error' => $e->getMessage()]);
+            $this->dispatch('toast', type: 'error', message: 'Error PCare: ' . $e->getMessage(), title: 'BPJS Error');
+        }
+    }
+
+    /* -------------------------
+     | Build payload kunjungan (dipakai add & edit)
+     * ------------------------- */
+    private function buildKunjunganPayload(string $rjNo): ?array
+    {
+        $diagnosa  = $this->dataDaftarPoliRJ['diagnosis'] ?? [];
+        $kdDiag1   = $diagnosa[0]['icdX'] ?? '';
+        $kdDiag2   = $diagnosa[1]['icdX'] ?? null;
+        $kdDiag3   = $diagnosa[2]['icdX'] ?? null;
+
+        if (!$kdDiag1) {
+            $this->dispatch('toast', type: 'warning',
+                message: 'Diagnosa primer wajib diisi sebelum kirim Kunjungan.',
+                title: 'Diagnosa Belum');
+            return null;
+        }
+
+        $pf = $this->dataDaftarPoliRJ['pemeriksaanFisik']
+            ?? $this->dataDaftarPoliRJ['tandaVital']
+            ?? [];
+
+        $rjDate  = Carbon::createFromFormat('d/m/Y H:i:s', $this->dataDaftarPoliRJ['rjDate']);
+        $noKartu = preg_replace('/\D/', '', $this->dataPasien['pasien']['identitas']['nokartuBpjs'] ?? '');
+        $perencanaan = $this->dataDaftarPoliRJ['perencanaan'] ?? [];
+        $anamnesa    = $this->dataDaftarPoliRJ['anamnesa'] ?? [];
+
+        return [
+            'noKunjungan'  => 'RJ-' . $rjNo,
+            'noKartu'      => $noKartu,
+            'tglDaftar'    => $rjDate->format('d-m-Y'),
+            'kdPoli'       => $this->dataDaftarPoliRJ['kdpolibpjs'] ?? '',
+            'keluhan'      => $anamnesa['keluhanUtama'] ?? '-',
+            'kdSadar'      => $pf['kdSadar'] ?? '01',
+            'sistole'      => (int) ($pf['sistole'] ?? 0),
+            'diastole'     => (int) ($pf['diastole'] ?? 0),
+            'beratBadan'   => (int) ($pf['beratBadan'] ?? 0),
+            'tinggiBadan'  => (int) ($pf['tinggiBadan'] ?? 0),
+            'respRate'     => (int) ($pf['rr'] ?? $pf['respirasi'] ?? 0),
+            'heartRate'    => (int) ($pf['nadi'] ?? 0),
+            'lingkarPerut' => (int) ($pf['lingkarPerut'] ?? 0),
+            'kdStatusPulang' => $perencanaan['kdStatusPulang'] ?? '4',
+            'tglPulang'    => Carbon::now()->format('d-m-Y'),
+            'kdDokter'     => $this->dataDaftarPoliRJ['kddrbpjs'] ?? '',
+            'kdDiag1'      => $kdDiag1,
+            'kdDiag2'      => $kdDiag2,
+            'kdDiag3'      => $kdDiag3,
+            'kdPoliRujukInternal' => null,
+            'rujukLanjut'  => null,
+            'kdTacc'       => -1,
+            'alasanTacc'   => '',
+            'anamnesa'     => $anamnesa['anamnesa'] ?? $anamnesa['keluhanUtama'] ?? '-',
+            'alergiMakan'  => $anamnesa['alergiMakan'] ?? '00',
+            'alergiUdara'  => $anamnesa['alergiUdara'] ?? '00',
+            'alergiObat'   => $anamnesa['alergiObat'] ?? '00',
+            'kdPrognosa'   => $perencanaan['kdPrognosa'] ?? '01',
+            'terapiObat'   => $perencanaan['terapiObat'] ?? '-',
+            'terapiNonObat'=> $perencanaan['terapiNonObat'] ?? '',
+            'bmhp'         => $perencanaan['bmhp'] ?? '',
+            'suhu'         => (string) ($pf['suhu'] ?? '36.5'),
+        ];
     }
 
     /* ===============================
@@ -1094,5 +1295,92 @@ new class extends Component {
     {{-- Satu Sehat & iDRG modal embed pindah ke ⚡daftar-rj.blade.php (page level)
          supaya pola konsisten dengan openRekamMedis/openSatuSehat/openIdrg dispatcher
          yang sudah ada di daftar-rj. --}}
+
+    {{-- ================================
+         RIWAYAT KUNJUNGAN BPJS — modal
+    ================================ --}}
+    <x-modal name="rj-riwayat-bpjs" size="3xl" focusable>
+        <div class="flex flex-col">
+            {{-- HEADER --}}
+            <div class="flex items-start justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                        Riwayat Kunjungan BPJS
+                    </h2>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        {{ $riwayatBpjsTitle ?: 'Detail kunjungan dari BPJS PCare' }}
+                    </p>
+                </div>
+                <x-icon-button color="gray" type="button" wire:click="closeRiwayatBpjs">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </x-icon-button>
+            </div>
+
+            {{-- BODY --}}
+            <div class="px-6 py-4 max-h-[70vh] overflow-y-auto">
+                @if (count($riwayatBpjsList) === 0)
+                    <div class="px-4 py-10 text-sm text-center text-gray-500 dark:text-gray-400">
+                        Belum ada riwayat kunjungan.
+                    </div>
+                @else
+                    <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                        @foreach ($riwayatBpjsList as $idx => $row)
+                            <li wire:key="riwayat-bpjs-{{ $idx }}" class="py-3">
+                                <div class="flex flex-wrap items-baseline justify-between gap-2">
+                                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                        {{ $row['kdPoli']['nmPoli'] ?? ($row['kdPoli'] ?? '-') }}
+                                        <span class="ml-2 text-xs font-normal text-gray-500">
+                                            {{ $row['tglDaftar'] ?? '-' }}
+                                        </span>
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        @if (!empty($row['noKunjungan']))
+                                            No: <span class="font-mono">{{ $row['noKunjungan'] }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="mt-1 text-sm text-gray-700 dark:text-gray-200">
+                                    @if (!empty($row['keluhan']))
+                                        <div><span class="text-gray-500">Keluhan:</span> {{ $row['keluhan'] }}</div>
+                                    @endif
+                                    @if (!empty($row['kdDiag1']) || !empty($row['nmDiag1']))
+                                        <div>
+                                            <span class="text-gray-500">Dx1:</span>
+                                            <span class="font-mono">{{ $row['kdDiag1'] ?? '-' }}</span>
+                                            {{ $row['nmDiag1'] ?? '' }}
+                                        </div>
+                                    @endif
+                                    @if (!empty($row['kdDiag2']) || !empty($row['nmDiag2']))
+                                        <div>
+                                            <span class="text-gray-500">Dx2:</span>
+                                            <span class="font-mono">{{ $row['kdDiag2'] ?? '-' }}</span>
+                                            {{ $row['nmDiag2'] ?? '' }}
+                                        </div>
+                                    @endif
+                                    @if (!empty($row['terapiObat']))
+                                        <div><span class="text-gray-500">Terapi:</span> {{ $row['terapiObat'] }}</div>
+                                    @endif
+                                    @if (!empty($row['kdDokter']) || !empty($row['nmDokter']))
+                                        <div class="text-xs text-gray-500">
+                                            Dokter: {{ $row['nmDokter'] ?? $row['kdDokter'] ?? '-' }}
+                                        </div>
+                                    @endif
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </div>
+
+            {{-- FOOTER --}}
+            <div class="flex justify-end px-6 py-3 border-t border-gray-200 dark:border-gray-700">
+                <x-secondary-button type="button" wire:click="closeRiwayatBpjs">Tutup</x-secondary-button>
+            </div>
+        </div>
+    </x-modal>
 
 </div>
