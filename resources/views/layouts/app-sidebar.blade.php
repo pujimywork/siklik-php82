@@ -29,7 +29,6 @@
             ['label' => 'Master Cara Keluar',     'route' => 'master.cara-keluar'],
             ['label' => 'Master Parameter',       'route' => 'master.parameter'],
             ['label' => 'Master Alat Medis',      'route' => 'master.medik'],
-            ['label' => 'Setup Jadwal BPJS',      'route' => 'master.setup-jadwal-bpjs'],
         ],
         'Master Tarif Jasa' => [
             ['label' => 'Master Jasa Dokter',     'route' => 'master.jasa-dokter'],
@@ -58,7 +57,6 @@
         ],
         'Rawat Jalan' => [
             ['label' => 'Daftar RJ',          'route' => 'rawat-jalan.daftar'],
-            ['label' => 'Booking RJ',         'route' => 'rawat-jalan.booking'],
             ['label' => 'Antrian Apotek',     'route' => 'transaksi.rj.antrian-apotek-rj'],
         ],
         'Apotek & Penunjang' => [
