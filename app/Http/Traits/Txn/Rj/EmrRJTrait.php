@@ -45,7 +45,6 @@ trait EmrRJTrait
                 'erm_status',
                 'vno_sep',
                 'no_antrian',
-                'no_sep',
                 'nobooking',
                 'waktu_masuk_poli',
                 'waktu_masuk_apt',
@@ -172,7 +171,7 @@ trait EmrRJTrait
         $dataDaftarRJ['noAntrian'] = $row->no_antrian ?? '';
         $dataDaftarRJ['noBooking'] = $row->nobooking  ?? '';
 
-        $dataDaftarRJ['sep']['noSep'] = $row->vno_sep ?? $row->no_sep ?? '';
+        $dataDaftarRJ['sep']['noSep'] = $row->vno_sep ?? '';
 
         $dataDaftarRJ['taskIdPelayanan']['taskId3'] =
             $row->rj_date ?? $dataDaftarRJ['taskIdPelayanan']['taskId3'] ?? '';
