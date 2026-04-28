@@ -813,7 +813,6 @@ new class extends Component {
                         <p class="font-semibold text-gray-700 dark:text-gray-300">Panduan Kasir RJ:</p>
                         <ul class="mt-1 space-y-0.5 list-disc list-inside">
                             <li><strong>Post Transaksi</strong> — Pilih Akun Kas, isi nominal bayar, lalu klik "Post Transaksi". Bisa cicilan (bayar sebagian) atau lunas (bayar penuh).</li>
-                            <li><strong>Transfer ke UGD</strong> — Jika pasien RJ perlu dilanjutkan ke UGD, klik "Transfer ke UGD". Seluruh biaya RJ akan dipindahkan ke UGD dan status RJ menjadi Inap/Rujuk.</li>
                         </ul>
                     </div>
                 </div>
@@ -857,7 +856,7 @@ new class extends Component {
                     <div class="flex-1"></div>
                 @endif
 
-                {{-- Tombol Post & Transfer --}}
+                {{-- Tombol Post --}}
                 <div class="flex gap-2 pb-0.5">
                     <x-primary-button wire:click="postTransaksi" wire:loading.attr="disabled"
                         wire:target="postTransaksi">
@@ -865,13 +864,7 @@ new class extends Component {
                         <span wire:loading wire:target="postTransaksi"><x-loading /></span>
                     </x-primary-button>
 
-                    @if ($txnStatus === null || $txnStatus === 'A')
-                        <x-confirm-button variant="warning" :action="'transferKeUGD()'" title="Transfer ke UGD"
-                            message="Yakin ingin mentransfer biaya RJ ini ke UGD? Status RJ akan diubah menjadi 'Inap/Rujuk' dan data biaya akan dipindahkan ke UGD."
-                            confirmText="Ya, transfer" cancelText="Batal">
-                            Transfer ke UGD
-                        </x-confirm-button>
-                    @endif
+                    {{-- "Transfer ke UGD" dihapus — klinik pratama tidak ada UGD --}}
                 </div>
 
             </div>

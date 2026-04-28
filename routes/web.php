@@ -145,42 +145,11 @@ Route::middleware(['auth'])->group(function () {
 
 
     // ===========================================
-    // UGD - DAFTAR UGD
-    // ===========================================
-    Route::livewire('/ugd/daftar', 'pages::transaksi.ugd.daftar-ugd.daftar-ugd')
-        ->name('ugd.daftar');
-
-
-    // ===========================================
-    // TRANSAKSI UGD - ANTRIAN APOTEK
-    // ===========================================
-    Route::livewire('/transaksi/ugd/antrian-apotek-ugd', 'pages::transaksi.ugd.antrian-apotek-ugd.antrian-apotek-ugd')
-        ->name('transaksi.ugd.antrian-apotek-ugd');
-
-
-    // ===========================================
-    // TRANSAKSI APOTEK - GABUNGAN RJ & UGD (tab)
+    // TRANSAKSI APOTEK (RJ only — klinik pratama tidak ada UGD)
     // ===========================================
     Route::livewire('/transaksi/apotek', 'pages::transaksi.apotek.apotek')
         ->name('transaksi.apotek');
 
-
-    // ===========================================
-    // RI - DAFTAR RI
-    // ===========================================
-    Route::livewire('/ri/daftar', 'pages::transaksi.ri.daftar-ri.daftar-ri')
-        ->name('ri.daftar');
-
-    // ===========================================
-    // RI — UPDATE TEMPAT TIDUR (Aplicares + SIRS)
-    // ===========================================
-    Route::livewire('/ri/update-tt-ri', 'pages::transaksi.ri.update-tt-ri.update-tt-ri')
-        ->name('ri.update-tt-ri');
-    // ===========================================
-    // OPERASI - JADWAL OPERASI
-    // ===========================================
-    Route::livewire('/operasi/jadwal-operasi', 'pages::operasi.jadwal-operasi.jadwal-operasi')
-        ->name('operasi.jadwal-operasi');
 
     // ===========================================
     // KEUANGAN - PENERIMAAN KAS TU

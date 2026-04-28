@@ -59,23 +59,16 @@
         'Rawat Jalan' => [
             ['label' => 'Daftar RJ',          'route' => 'rawat-jalan.daftar'],
             ['label' => 'Booking RJ',         'route' => 'rawat-jalan.booking'],
-            ['label' => 'Antrian Apotek RJ',  'route' => 'transaksi.rj.antrian-apotek-rj'],
-        ],
-        'UGD' => [
-            ['label' => 'Daftar UGD',         'route' => 'ugd.daftar'],
-            ['label' => 'Antrian Apotek UGD', 'route' => 'transaksi.ugd.antrian-apotek-ugd'],
+            ['label' => 'Antrian Apotek',     'route' => 'transaksi.rj.antrian-apotek-rj'],
         ],
         'Apotek & Penunjang' => [
-            ['label' => 'Apotek (RJ + UGD)',  'route' => 'transaksi.apotek'],
+            ['label' => 'Antrian Apotek',     'route' => 'transaksi.apotek'],
             ['label' => 'Laboratorium',       'route' => 'transaksi.penunjang.laborat'],
             ['label' => 'Penerimaan Medis',   'route' => 'gudang.penerimaan-medis'],
         ],
         'Keuangan' => [
             ['label' => 'Penerimaan Kas TU',  'route' => 'keuangan.penerimaan-kas-tu'],
             ['label' => 'Pengeluaran Kas TU', 'route' => 'keuangan.pengeluaran-kas-tu'],
-        ],
-        'Operasi' => [
-            ['label' => 'Jadwal Operasi', 'route' => 'operasi.jadwal-operasi'],
         ],
         'Database Monitor' => [
             ['label' => 'Monitoring Dashboard', 'route' => 'database-monitor.monitoring-dashboard'],
