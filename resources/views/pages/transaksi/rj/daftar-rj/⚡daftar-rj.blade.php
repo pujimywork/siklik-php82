@@ -413,7 +413,7 @@ new class extends Component {
     #[Computed]
     public function poliList()
     {
-        return DB::table('rsmst_polis')->select('poli_id', 'poli_desc', 'spesialis_status')->orderBy('poli_desc')->get();
+        return DB::table('rsmst_polis')->select('poli_id', 'poli_desc')->orderBy('poli_desc')->get();
     }
 
     #[Computed]

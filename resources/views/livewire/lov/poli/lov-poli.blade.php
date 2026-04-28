@@ -63,7 +63,7 @@ new class extends Component {
         }
 
         $row = DB::table('rsmst_polis')
-            ->select('poli_id', 'poli_desc', 'kd_poli_bpjs', 'poli_uuid', 'spesialis_status')
+            ->select('poli_id', 'poli_desc', 'kd_poli_bpjs', 'poli_uuid')
             ->where('poli_id', $poliId)
             ->first();
 
@@ -92,7 +92,7 @@ new class extends Component {
         //    rsmst_polis.poli_id bertipe NUMBER di Oracle (huruf → ORA-01722).
         if (is_numeric($keyword)) {
             $exact = DB::table('rsmst_polis')
-                ->select('poli_id', 'poli_desc', 'kd_poli_bpjs', 'poli_uuid', 'spesialis_status')
+                ->select('poli_id', 'poli_desc', 'kd_poli_bpjs', 'poli_uuid')
                 ->where('poli_id', $keyword)
                 ->first();
 
@@ -106,7 +106,7 @@ new class extends Component {
         $upperKw = mb_strtoupper($keyword);
 
         $rows = DB::table('rsmst_polis')
-            ->select('poli_id', 'poli_desc', 'kd_poli_bpjs', 'poli_uuid', 'spesialis_status')
+            ->select('poli_id', 'poli_desc', 'kd_poli_bpjs', 'poli_uuid')
             ->where(function ($q) use ($upperKw) {
                 // TO_CHAR eksplisit pada poli_id (NUMBER) supaya aman di driver Oracle apapun.
                 $q->orWhereRaw('UPPER(poli_desc) LIKE ?', ["%{$upperKw}%"])
