@@ -7,14 +7,10 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Http\Traits\Txn\Rj\EmrRJTrait;
-use App\Http\Traits\Txn\Ugd\EmrUGDTrait;
-use App\Http\Traits\Txn\Ri\EmrRITrait;
 use App\Http\Traits\Master\MasterPasien\MasterPasienTrait;
 
 new class extends Component {
-    use EmrRJTrait, EmrUGDTrait, EmrRITrait, MasterPasienTrait {
-        EmrRJTrait::checkLabPending insteadof EmrUGDTrait;
-    }
+    use EmrRJTrait, MasterPasienTrait;
 
     /* ── RJ ── */
     #[On('cetak-skdp-rj.open')]
@@ -30,38 +26,6 @@ new class extends Component {
             return null;
         }
         return $this->generatePdf($dataRJ, 'rj');
-    }
-
-    /* ── UGD ── */
-    #[On('cetak-skdp-ugd.open')]
-    public function openUGD(?string $rjNo = null): mixed
-    {
-        if (empty($rjNo)) {
-            $this->dispatch('toast', type: 'error', message: 'No. Transaksi UGD tidak tersedia.');
-            return null;
-        }
-        $dataUGD = $this->findDataUGD($rjNo);
-        if (empty($dataUGD) || empty($dataUGD['kontrol']['tglKontrol'])) {
-            $this->dispatch('toast', type: 'error', message: 'Data surat kontrol UGD belum tersedia.');
-            return null;
-        }
-        return $this->generatePdf($dataUGD, 'ugd');
-    }
-
-    /* ── RI ── */
-    #[On('cetak-skdp-ri.open')]
-    public function openRI(?string $riHdrNo = null): mixed
-    {
-        if (empty($riHdrNo)) {
-            $this->dispatch('toast', type: 'error', message: 'No. Transaksi RI tidak tersedia.');
-            return null;
-        }
-        $dataRI = $this->findDataRI($riHdrNo);
-        if (empty($dataRI) || empty($dataRI['kontrol']['tglKontrol'])) {
-            $this->dispatch('toast', type: 'error', message: 'Data surat kontrol RI belum tersedia.');
-            return null;
-        }
-        return $this->generatePdf($dataRI, 'ri');
     }
 
     /* ── Generate PDF ── */
