@@ -81,6 +81,17 @@ WHERE table_name IN ('RSMST_SNOMED_CODES','RSMST_LOINC_CODES');
 
 ---
 
+## Folder `_dev/` — bukan untuk server install
+
+Subfolder `_dev/` berisi script introspection / debug untuk dev. **Jangan**
+dijalankan ke server produksi sebagai bagian dari deployment.
+
+| File | Fungsi |
+|------|--------|
+| `_dev/describe_master_tables.sql` | Dump struktur kolom + PK + FK + index dari semua master tables (`*MST_*`) supaya bisa diff dgn implementasi siklik-php82 |
+
+---
+
 ## Catatan teknis
 
 - **Reserved word `KEY`**: Kolom `KEY` di `CACHE` dan `CACHE_LOCKS` di-create dengan `"KEY"` (uppercase quoted) supaya match query yajra/oci8 driver. Lowercase `"key"` akan trigger ORA-00904.
