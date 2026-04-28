@@ -192,16 +192,20 @@ trait EmrRJTrait
      */
     private function getDefaultRJTemplate(): array
     {
+        // Shape mengikuti siklik-lite (klinik pratama PCare). Field rujukan
+        // FKTL/internal/kontrol khas RS sengaja tidak di-include.
         return [
             'regNo'    => '',
             'regName'  => '',
             'drId'     => '',
             'drDesc'   => '',
+            'kddrbpjs' => '',
             'poliId'   => '',
             'poliDesc' => '',
+            'kdpolibpjs' => '',
+
             'klaimId'     => 'UM',
             'klaimStatus' => 'UMUM',
-            'kunjunganId' => '1',
 
             'rjDate'    => '',
             'rjNo'      => '',
@@ -209,29 +213,18 @@ trait EmrRJTrait
             'noAntrian' => '',
             'noBooking' => '',
 
-            'slCodeFrom'             => '02',
-            'passStatus'             => 'O',
-            'rjStatus'               => 'A',
-            'txnStatus'              => 'A',
-            'ermStatus'              => 'A',
-            'cekLab'                 => '0',
-            'kunjunganInternalStatus' => '0',
-            'noReferensi'            => '',
-            'postInap'               => false,
+            'slCodeFrom' => '02',
+            'passStatus' => 'O',
+            'rjStatus'   => 'A',
+            'txnStatus'  => 'A',
+            'ermStatus'  => 'A',
+            'cekLab'     => '0',
 
-            'internal12'      => '1',
-            'internal12Desc'  => 'Faskes Tingkat 1',
-            'internal12Options' => [
-                ['internal12' => '1', 'internal12Desc' => 'Faskes Tingkat 1'],
-                ['internal12' => '2', 'internal12Desc' => 'Faskes Tingkat 2 RS'],
-            ],
-
-            'kontrol12'      => '1',
-            'kontrol12Desc'  => 'Faskes Tingkat 1',
-            'kontrol12Options' => [
-                ['kontrol12' => '1', 'kontrol12Desc' => 'Faskes Tingkat 1'],
-                ['kontrol12' => '2', 'kontrol12Desc' => 'Faskes Tingkat 2 RS'],
-            ],
+            // BPJS PCare (klinik pratama)
+            'kunjSakit'   => '1', // 1 = Sakit, 0 = Sehat
+            'kdTkp'       => '10', // 10 = RJTP, 50 = Promotif
+            'noKartu'     => '',
+            'noUrutBpjs'  => '',
 
             'taskIdPelayanan' => [
                 'tambahPendaftaran' => '',
@@ -251,12 +244,6 @@ trait EmrRJTrait
                 'taskId7Status'  => '',
                 'taskId99'          => '',
                 'taskId99Status' => '',
-            ],
-
-            'sep' => [
-                'noSep'  => '',
-                'reqSep' => [],
-                'resSep' => [],
             ],
         ];
     }

@@ -29,15 +29,6 @@ new class extends Component {
     public string $klaimId = 'UM';
     public array $klaimOptions = [['klaimId' => 'UM', 'klaimDesc' => 'UMUM'], ['klaimId' => 'JM', 'klaimDesc' => 'BPJS'], ['klaimId' => 'JR', 'klaimDesc' => 'JASA RAHARJA'], ['klaimId' => 'JML', 'klaimDesc' => 'Asuransi Lain'], ['klaimId' => 'KR', 'klaimDesc' => 'Kronis']];
 
-    public string $kunjunganId = '1';
-    public array $kunjunganOptions = [['kunjunganId' => '1', 'kunjunganDesc' => 'Rujukan FKTP'], ['kunjunganId' => '2', 'kunjunganDesc' => 'Rujukan Internal'], ['kunjunganId' => '3', 'kunjunganDesc' => 'Kontrol'], ['kunjunganId' => '4', 'kunjunganDesc' => 'Rujukan Antar RS']];
-
-    public string $kontrol12 = '1';
-    public array $kontrol12Options = [['kontrol12' => '1', 'kontrol12Desc' => 'Faskes Tingkat 1'], ['kontrol12' => '2', 'kontrol12Desc' => 'Faskes Tingkat 2 RS']];
-
-    public string $internal12 = '1';
-    public array $internal12Options = [['internal12' => '1', 'internal12Desc' => 'Faskes Tingkat 1'], ['internal12' => '2', 'internal12Desc' => 'Faskes Tingkat 2 RS']];
-
     /* -------------------------
      | BPJS PCare klinik pratama: Kunjungan Sakit/Sehat & Tkp
      * ------------------------- */
@@ -224,7 +215,6 @@ new class extends Component {
             'pass_status' => $this->dataDaftarPoliRJ['passStatus'] ?? 'O',
             'cek_lab' => $this->dataDaftarPoliRJ['cekLab'] ?? '0',
             'sl_codefrom' => $this->dataDaftarPoliRJ['slCodeFrom'] ?? '02',
-            'kunjungan_internal_status' => $this->dataDaftarPoliRJ['kunjunganInternalStatus'] ?? '0',
             'waktu_masuk_pelayanan' => DB::raw("to_date('" . $this->dataDaftarPoliRJ['rjDate'] . "','dd/mm/yyyy hh24:mi:ss')"),
         ];
     }
@@ -235,10 +225,6 @@ new class extends Component {
     private function setDataPrimer(): void
     {
         $data = &$this->dataDaftarPoliRJ;
-
-        if (!empty($data['kunjunganId']) && $data['kunjunganId'] == 2) {
-            $data['kunjunganInternalStatus'] = '1';
-        }
 
         if (empty($data['noBooking'])) {
             $data['noBooking'] = Carbon::now()->format('YmdHis') . 'RSIM';
@@ -285,8 +271,9 @@ new class extends Component {
             'dataDaftarPoliRJ.noAntrian' => 'Nomor Antrian',
             'dataDaftarPoliRJ.noBooking' => 'Nomor Booking',
             'dataDaftarPoliRJ.slCodeFrom' => 'Kode Sumber',
-            'dataDaftarPoliRJ.noReferensi' => 'Nomor Referensi',
             'dataDaftarPoliRJ.klaimId' => 'ID Klaim',
+            'dataDaftarPoliRJ.kunjSakit' => 'Kunjungan Sakit/Sehat',
+            'dataDaftarPoliRJ.kdTkp' => 'Tempat Pelayanan (Tkp)',
         ];
 
         $rules = [
@@ -308,13 +295,13 @@ new class extends Component {
             'dataDaftarPoliRJ.txnStatus' => 'required|in:A,L,H',
             'dataDaftarPoliRJ.ermStatus' => 'required|in:A,L',
             'dataDaftarPoliRJ.cekLab' => 'required|in:0,1',
-            'dataDaftarPoliRJ.kunjunganInternalStatus' => 'required|in:0,1',
-            'dataDaftarPoliRJ.noReferensi' => 'nullable|string|min:3|max:19',
             'dataDaftarPoliRJ.klaimId' => 'required|exists:rsmst_klaimtypes,klaim_id',
         ];
 
         if (($this->dataDaftarPoliRJ['klaimStatus'] ?? '') === 'BPJS' || ($this->dataDaftarPoliRJ['klaimId'] ?? '') === 'JM') {
-            $rules['dataDaftarPoliRJ.noReferensi'] = 'bail|required|string|min:3|max:19';
+            $rules['dataDaftarPoliRJ.kunjSakit'] = 'required|in:0,1';
+            $rules['dataDaftarPoliRJ.kdTkp']     = 'required|in:10,50';
+            $rules['dataDaftarPoliRJ.kdpolibpjs'] = 'required|string';
         }
 
         if (($this->dataDaftarPoliRJ['klaimStatus'] ?? '') === 'KRONIS') {
@@ -329,7 +316,7 @@ new class extends Component {
      =============================== */
     private function updateJsonData(string $rjNo): void
     {
-        $allowedFields = ['regNo', 'drId', 'drDesc', 'poliId', 'poliDesc', 'kddrbpjs', 'kdpolibpjs', 'klaimId', 'kunjunganId', 'rjDate', 'shift', 'noAntrian', 'noBooking', 'slCodeFrom', 'passStatus', 'rjStatus', 'txnStatus', 'ermStatus', 'cekLab', 'kunjunganInternalStatus', 'noReferensi', 'postInap', 'internal12', 'internal12Desc', 'kontrol12', 'kontrol12Desc', 'taskIdPelayanan', 'sep', 'klaimStatus', 'kunjSakit', 'kdTkp'];
+        $allowedFields = ['regNo', 'regName', 'drId', 'drDesc', 'kddrbpjs', 'poliId', 'poliDesc', 'kdpolibpjs', 'klaimId', 'klaimStatus', 'rjDate', 'shift', 'noAntrian', 'noBooking', 'slCodeFrom', 'passStatus', 'rjStatus', 'txnStatus', 'ermStatus', 'cekLab', 'taskIdPelayanan', 'kunjSakit', 'kdTkp', 'noKartu', 'noUrutBpjs'];
 
         if ($this->formMode === 'create') {
             $this->updateJsonRJ($rjNo, $this->dataDaftarPoliRJ);
@@ -958,7 +945,7 @@ new class extends Component {
             $this->incrementVersion('modal');
         }
 
-        if (in_array($name, ['klaimId', 'kunjunganId', 'kontrol12', 'internal12', 'kunjSakit', 'kdTkp'])) {
+        if (in_array($name, ['klaimId', 'kunjSakit', 'kdTkp'])) {
             $this->incrementVersion('modal');
         }
 
@@ -976,56 +963,17 @@ new class extends Component {
             $this->klaimId = $value;
             $this->dataDaftarPoliRJ['klaimId'] = $value;
             $this->dataDaftarPoliRJ['klaimStatus'] = DB::table('rsmst_klaimtypes')->where('klaim_id', $value)->value('klaim_status') ?? 'UMUM';
-            $this->kunjunganId = '1';
-            $this->dataDaftarPoliRJ['kunjunganId'] = '1';
-            $this->resetKontrolInternal();
-        }
-
-        if ($name === 'kunjunganId') {
-            $this->kunjunganId = $value;
-            $this->dataDaftarPoliRJ['kunjunganId'] = $value;
-            $this->dataDaftarPoliRJ['postInap'] = false;
-            $this->resetKontrolInternal();
-            $this->dispatch('focus-no-referensi');
-        }
-
-        if ($name === 'kontrol12') {
-            $this->kontrol12 = $value;
-            $this->dataDaftarPoliRJ['kontrol12'] = $value;
-            $this->dataDaftarPoliRJ['kontrol12Desc'] = collect($this->kontrol12Options)->first(fn($o) => $o['kontrol12'] === $value)['kontrol12Desc'] ?? '-';
-        }
-
-        if ($name === 'internal12') {
-            $this->internal12 = $value;
-            $this->dataDaftarPoliRJ['internal12'] = $value;
-            $this->dataDaftarPoliRJ['internal12Desc'] = collect($this->internal12Options)->first(fn($o) => $o['internal12'] === $value)['internal12Desc'] ?? '-';
         }
     }
 
     /* ===============================
      | HELPERS
      =============================== */
-    private function resetKontrolInternal(): void
-    {
-        $this->kontrol12 = '1';
-        $this->internal12 = '1';
-        $this->dataDaftarPoliRJ['kontrol12'] = '1';
-        $this->dataDaftarPoliRJ['internal12'] = '1';
-        $this->dataDaftarPoliRJ['kontrol12Desc'] = collect($this->kontrol12Options)->first(fn($o) => $o['kontrol12'] === '1')['kontrol12Desc'] ?? '-';
-        $this->dataDaftarPoliRJ['internal12Desc'] = collect($this->internal12Options)->first(fn($o) => $o['internal12'] === '1')['internal12Desc'] ?? '-';
-    }
-
     private function syncFromDataDaftarPoliRJ(): void
     {
-        $this->klaimId = $this->dataDaftarPoliRJ['klaimId'] ?? 'UM';
-        $this->kunjunganId = $this->dataDaftarPoliRJ['kunjunganId'] ?? '1';
-        $this->kontrol12 = $this->dataDaftarPoliRJ['kontrol12'] ?? '1';
-        $this->internal12 = $this->dataDaftarPoliRJ['internal12'] ?? '1';
+        $this->klaimId   = $this->dataDaftarPoliRJ['klaimId'] ?? 'UM';
         $this->kunjSakit = (string) ($this->dataDaftarPoliRJ['kunjSakit'] ?? '1');
-        $this->kdTkp = (string) ($this->dataDaftarPoliRJ['kdTkp'] ?? '10');
-
-        $this->dataDaftarPoliRJ['kontrol12Desc'] = collect($this->kontrol12Options)->first(fn($o) => $o['kontrol12'] === $this->kontrol12)['kontrol12Desc'] ?? '-';
-        $this->dataDaftarPoliRJ['internal12Desc'] = collect($this->internal12Options)->first(fn($o) => $o['internal12'] === $this->internal12)['internal12Desc'] ?? '-';
+        $this->kdTkp     = (string) ($this->dataDaftarPoliRJ['kdTkp'] ?? '10');
     }
 
     protected function resetForm(): void
@@ -1033,9 +981,6 @@ new class extends Component {
         $this->reset(['rjNo', 'dataDaftarPoliRJ']);
         $this->resetVersion();
         $this->klaimId = 'UM';
-        $this->kunjunganId = '1';
-        $this->kontrol12 = '1';
-        $this->internal12 = '1';
         $this->kunjSakit = '1';
         $this->kdTkp = '10';
         $this->formMode = 'create';
@@ -1171,47 +1116,7 @@ new class extends Component {
                             <div
                                 class="p-6 space-y-6 bg-white border border-gray-200 shadow-sm rounded-2xl dark:bg-gray-900 dark:border-gray-700">
                                 @if (($dataDaftarPoliRJ['klaimStatus'] ?? '') === 'BPJS' || ($dataDaftarPoliRJ['klaimId'] ?? '') === 'JM')
-                                    <div>
-                                        <x-input-label value="Jenis Kunjungan" />
-                                        <div class="grid grid-cols-4 gap-2">
-                                            @foreach ($kunjunganOptions ?? [] as $kunjungan)
-                                                <x-radio-button :label="$kunjungan['kunjunganDesc']" :value="$kunjungan['kunjunganId']" name="kunjunganId"
-                                                    wire:model.live="kunjunganId" :disabled="$isFormLocked" />
-                                            @endforeach
-                                        </div>
-                                        <div class="mt-2">
-                                            @if (($dataDaftarPoliRJ['kunjunganId'] ?? '') === '3')
-                                                <x-toggle wire:model.live="dataDaftarPoliRJ.postInap" trueValue="1"
-                                                    falseValue="0" label="Post Inap" :disabled="$isFormLocked" />
-                                            @endif
-                                            <div class="grid grid-cols-2 gap-2 mt-2">
-                                                @if ($kunjunganId === '2')
-                                                    @foreach ($internal12Options ?? [] as $internal)
-                                                        <x-radio-button :label="__($internal['internal12Desc'])"
-                                                            value="{{ $internal['internal12'] }}" name="internal12"
-                                                            wire:model.live="internal12" :disabled="$isFormLocked" />
-                                                    @endforeach
-                                                @endif
-                                                @if ($kunjunganId === '3')
-                                                    @foreach ($kontrol12Options ?? [] as $kontrol)
-                                                        <x-radio-button :label="__($kontrol['kontrol12Desc'])"
-                                                            value="{{ $kontrol['kontrol12'] }}" name="kontrol12"
-                                                            wire:model.live="kontrol12" :disabled="$isFormLocked" />
-                                                    @endforeach
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </div>
                                     <div class="space-y-3">
-                                        <div class="grid" x-ref="inputNoReferensi">
-                                            <x-input-label value="No Referensi" />
-                                            <x-text-input wire:model.live="dataDaftarPoliRJ.noReferensi"
-                                                :disabled="$isFormLocked" />
-                                            <x-input-error :messages="$errors->get('dataDaftarPoliRJ.noReferensi')" />
-                                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">di isi dgn : (No
-                                                Rujukan untuk FKTP/FKTL) (SKDP untuk Kontrol/Rujukan Internal)</p>
-                                        </div>
-
                                         {{-- Kunjungan Sakit/Sehat — PCare klinik pratama --}}
                                         <div>
                                             <x-input-label value="Kunjungan Sakit / Sehat" :required="true" />
