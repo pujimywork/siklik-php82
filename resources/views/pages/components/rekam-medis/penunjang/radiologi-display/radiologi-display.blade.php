@@ -77,7 +77,7 @@ new class extends Component {
 
         $searchKeyword = trim($this->searchKeyword);
 
-        $query = DB::table('rsview_rads')->select(DB::raw("TO_CHAR(rad_date,'dd/mm/yyyy hh24:mi:ss') AS rad_date"), DB::raw("TO_CHAR(rad_date,'yyyymmddhh24miss') AS rad_date1"), 'txn_no', 'txn_no_dtl', 'reg_no', 'reg_name', 'rad_upload_pdf', 'rad_upload_pdf_foto', 'rad_rjri', 'rad_id', 'rad_desc')->where('reg_no', $this->regNo);
+        $query = DB::table('rsview_rads')->select(DB::raw("TO_CHAR(rad_date,'dd/mm/yyyy hh24:mi:ss') AS rad_date"), DB::raw("TO_CHAR(rad_date,'yyyymmddhh24miss') AS rad_date1"), 'txn_no', 'txn_no_dtl', 'reg_no', 'reg_name', 'rad_upload_pdf', 'rad_rjri', 'rad_id', 'rad_desc')->where('reg_no', $this->regNo);
 
         if ($this->filterTahun) {
             $query->whereYear('rad_date', $this->filterTahun);
@@ -115,7 +115,7 @@ new class extends Component {
             return ['total' => 0, 'ada_hasil' => 0, 'ada_foto' => 0, 'proses' => 0];
         }
 
-        $stats = DB::table('rsview_rads')->select(DB::raw('COUNT(*) as total'), DB::raw('SUM(CASE WHEN rad_upload_pdf IS NOT NULL THEN 1 ELSE 0 END) as ada_hasil'), DB::raw('SUM(CASE WHEN rad_upload_pdf_foto IS NOT NULL THEN 1 ELSE 0 END) as ada_foto'), DB::raw('SUM(CASE WHEN rad_upload_pdf IS NULL THEN 1 ELSE 0 END) as proses'))->where('reg_no', $this->regNo)->first();
+        $stats = DB::table('rsview_rads')->select(DB::raw('COUNT(*) as total'), DB::raw('SUM(CASE WHEN rad_upload_pdf IS NOT NULL THEN 1 ELSE 0 END) as ada_hasil'), DB::raw('SUM(CASE WHEN rad_upload_pdf IS NULL THEN 1 ELSE 0 END) as proses'))->where('reg_no', $this->regNo)->first();
 
         return [
             'total' => $stats->total ?? 0,
