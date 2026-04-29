@@ -1,6 +1,7 @@
 <?php
 
 use Livewire\Component;
+use Livewire\Attributes\Computed;
 use App\Http\Traits\Txn\Rj\EmrRJTrait;
 use App\Http\Traits\WithRenderVersioning\WithRenderVersioningTrait;
 use App\Http\Traits\WithValidationToast\WithValidationToastTrait;
@@ -37,6 +38,52 @@ new class extends Component {
         $default = $this->getDefaultPerencanaan();
         $current = $this->dataDaftarPoliRJ['perencanaan'] ?? [];
         $this->dataDaftarPoliRJ['perencanaan'] = array_replace_recursive($default, $current);
+    }
+
+    /* -------------------------
+     | Tindak Lanjut options dari BPJS PCare cache (ref_bpjs_table).
+     | Pakai kategori 'StatusPulang' — di-sync via Master > Ref BPJS.
+     | Kalau cache kosong, return [] dan UI akan kasih hint untuk sync.
+     * ------------------------- */
+    #[Computed]
+    public function statusPulangOptions(): array
+    {
+        $json = DB::table('ref_bpjs_table')
+            ->where('ref_keterangan', 'StatusPulang')
+            ->value('ref_json');
+
+        if (!$json) return [];
+
+        $list = json_decode($json, true);
+        if (!is_array($list)) return [];
+
+        // Auto-detect key kode (kdStatusPulang/kode/id) & nama (nmStatusPulang/nama).
+        $first = (array) ($list[0] ?? []);
+        $codeKey = collect(array_keys($first))->first(fn($k) =>
+            str_starts_with(strtolower($k), 'kd') || strtolower($k) === 'kode'
+        ) ?? array_key_first($first);
+        $nameKey = collect(array_keys($first))->first(fn($k) =>
+            str_starts_with(strtolower($k), 'nm') || strtolower($k) === 'nama'
+        ) ?? $codeKey;
+
+        return collect($list)->map(fn($it) => [
+            'kd' => (string) ((array) $it)[$codeKey] ?? '',
+            'nm' => (string) ((array) $it)[$nameKey] ?? '',
+        ])->filter(fn($o) => $o['kd'] !== '')->values()->all();
+    }
+
+    /**
+     * Handler change select kdStatusPulang — set juga tindakLanjut.tindakLanjut
+     * (display name) untuk konsistensi data lama.
+     */
+    public function changeStatusPulang(string $kdStatusPulang): void
+    {
+        $opts = $this->statusPulangOptions;
+        $found = collect($opts)->firstWhere('kd', $kdStatusPulang);
+        $nm = $found['nm'] ?? '';
+
+        $this->dataDaftarPoliRJ['perencanaan']['kdStatusPulang']           = $kdStatusPulang;
+        $this->dataDaftarPoliRJ['perencanaan']['tindakLanjut']['tindakLanjut'] = $nm;
     }
 
     /* ===============================
@@ -89,10 +136,11 @@ new class extends Component {
             ],
 
             'tindakLanjutTab' => 'Tindak Lanjut',
+            'kdStatusPulang' => '', // BPJS PCare kdStatusPulang (cached di ref_bpjs_table)
             'tindakLanjut' => [
                 'tindakLanjut' => '',
                 'keteranganTindakLanjut' => '',
-                'tindakLanjutOptions' => [['tindakLanjut' => 'Kontrol'], ['tindakLanjut' => 'Rujuk'], ['tindakLanjut' => 'Perawatan Selesai'], ['tindakLanjut' => 'Lain-lain']],
+                'tindakLanjutOptions' => [], // di-overwrite oleh computed statusPulangOptions dari ref_bpjs_table
             ],
 
             'terapiTab' => 'Terapi',
