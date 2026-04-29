@@ -95,7 +95,7 @@ new class extends Component {
                 : 'required|string',
             'form.cb_desc'       => 'required|string|max:100',
             'form.active_status' => 'required|in:0,1',
-            'form.acc_id'        => 'nullable|string|max:25|exists:acmst_accounts,acc_id',
+            'form.acc_id'        => 'nullable|string|max:25|exists:tkacc_accountses,acc_id',
         ];
 
         $messages = [

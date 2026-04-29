@@ -61,9 +61,10 @@ new class extends Component {
 
     protected function loadSelected(string $cbId): void
     {
+        // tkacc_accountses pakai acc_desc (bukan acc_name) untuk display nama akun.
         $row = DB::table('tkacc_carabayars as cb')
-            ->leftJoin('acmst_accounts as a', 'a.acc_id', '=', 'cb.acc_id')
-            ->select('cb.cb_id', 'cb.cb_desc', 'cb.active_status', 'cb.acc_id', 'a.acc_name')
+            ->leftJoin('tkacc_accountses as a', 'a.acc_id', '=', 'cb.acc_id')
+            ->select('cb.cb_id', 'cb.cb_desc', 'cb.active_status', 'cb.acc_id', 'a.acc_desc as acc_name')
             ->where('cb.cb_id', $cbId)
             ->first();
 
@@ -122,8 +123,8 @@ new class extends Component {
     protected function baseQuery(): \Illuminate\Database\Query\Builder
     {
         return DB::table('tkacc_carabayars as cb')
-            ->leftJoin('acmst_accounts as a', 'a.acc_id', '=', 'cb.acc_id')
-            ->select('cb.cb_id', 'cb.cb_desc', 'cb.active_status', 'cb.acc_id', 'a.acc_name')
+            ->leftJoin('tkacc_accountses as a', 'a.acc_id', '=', 'cb.acc_id')
+            ->select('cb.cb_id', 'cb.cb_desc', 'cb.active_status', 'cb.acc_id', 'a.acc_desc as acc_name')
             ->where('cb.active_status', '1');
     }
 

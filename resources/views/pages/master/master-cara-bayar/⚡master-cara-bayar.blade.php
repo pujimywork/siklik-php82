@@ -51,9 +51,10 @@ new class extends Component {
     #[Computed]
     public function rows()
     {
+        // tkacc_accountses (akun pusat) — pakai acc_desc bukan acc_name.
         $q = DB::table('tkacc_carabayars as cb')
-            ->leftJoin('acmst_accounts as a', 'a.acc_id', '=', 'cb.acc_id')
-            ->select('cb.cb_id', 'cb.cb_desc', 'cb.active_status', 'cb.acc_id', 'a.acc_name')
+            ->leftJoin('tkacc_accountses as a', 'a.acc_id', '=', 'cb.acc_id')
+            ->select('cb.cb_id', 'cb.cb_desc', 'cb.active_status', 'cb.acc_id', 'a.acc_desc as acc_name')
             ->orderByRaw("CASE WHEN cb.active_status = '1' THEN 0 ELSE 1 END")
             ->orderBy('cb.cb_desc');
 
@@ -63,7 +64,7 @@ new class extends Component {
                 $sub->whereRaw('UPPER(cb.cb_id) LIKE ?', ["%{$kw}%"])
                     ->orWhereRaw('UPPER(cb.cb_desc) LIKE ?', ["%{$kw}%"])
                     ->orWhereRaw('UPPER(cb.acc_id) LIKE ?', ["%{$kw}%"])
-                    ->orWhereRaw('UPPER(a.acc_name) LIKE ?', ["%{$kw}%"]);
+                    ->orWhereRaw('UPPER(a.acc_desc) LIKE ?', ["%{$kw}%"]);
             });
         }
 
