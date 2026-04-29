@@ -82,8 +82,6 @@ new class extends Component {
             'kd_dr_bpjs' => (string) ($row->kd_dr_bpjs ?? ''),
             'dr_uuid' => (string) ($row->dr_uuid ?? ''),
             'dr_nik' => (string) ($row->dr_nik ?? ''),
-            'poli_price_bpjs' => (string) ($row->poli_price_bpjs ?? ''),
-            'ugd_price_bpjs' => (string) ($row->ugd_price_bpjs ?? ''),
             'kd_poli_bpjs' => (string) ($row->kd_poli_bpjs ?? ''),
             'spesialis_status' => (string) ($row->spesialis_status ?? ''),
         ];
@@ -182,8 +180,6 @@ new class extends Component {
             'kd_dr_bpjs' => (string) ($row->kd_dr_bpjs ?? ''),
             'dr_uuid' => (string) ($row->dr_uuid ?? ''),
             'dr_nik' => (string) ($row->dr_nik ?? ''),
-            'poli_price_bpjs' => (string) ($row->poli_price_bpjs ?? ''),
-            'ugd_price_bpjs' => (string) ($row->ugd_price_bpjs ?? ''),
             'kd_poli_bpjs' => (string) ($row->kd_poli_bpjs ?? ''),
             'spesialis_status' => (string) ($row->spesialis_status ?? ''),
         ];
@@ -227,8 +223,6 @@ new class extends Component {
             'kd_dr_bpjs' => (string) ($row->kd_dr_bpjs ?? ''),
             'dr_uuid' => (string) ($row->dr_uuid ?? ''),
             'dr_nik' => $drNik,
-            'poli_price_bpjs' => (string) ($row->poli_price_bpjs ?? ''),
-            'ugd_price_bpjs' => (string) ($row->ugd_price_bpjs ?? ''),
             'kd_poli_bpjs' => (string) ($row->kd_poli_bpjs ?? ''),
             'spesialis_status' => $spesialisStatus,
 
@@ -314,8 +308,6 @@ new class extends Component {
             'kd_dr_bpjs' => $this->options[$index]['kd_dr_bpjs'] ?? '',
             'dr_uuid' => $this->options[$index]['dr_uuid'] ?? '',
             'dr_nik' => $this->options[$index]['dr_nik'] ?? '',
-            'poli_price_bpjs' => $this->options[$index]['poli_price_bpjs'] ?? '',
-            'ugd_price_bpjs' => $this->options[$index]['ugd_price_bpjs'] ?? '',
             'kd_poli_bpjs' => $this->options[$index]['kd_poli_bpjs'] ?? '',
             'spesialis_status' => $this->options[$index]['spesialis_status'] ?? '',
         ];
@@ -492,10 +484,6 @@ new class extends Component {
                                         @endif
                                         @if (!empty($option['ugd_price']) && $option['ugd_price'] > 0)
                                             <span>UGD: Rp {{ number_format($option['ugd_price'], 0, ',', '.') }}</span>
-                                        @endif
-                                        @if (!empty($option['poli_price_bpjs']) && $option['poli_price_bpjs'] > 0)
-                                            <span>BPJS Poli: Rp
-                                                {{ number_format($option['poli_price_bpjs'], 0, ',', '.') }}</span>
                                         @endif
                                     </div>
                                 @endif

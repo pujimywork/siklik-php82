@@ -43,14 +43,13 @@ new class extends Component {
 
     protected function loadSelected(string $accdocId): void
     {
-        $row = DB::table('rsmst_accdocs')->select('accdoc_id', 'accdoc_desc', 'accdoc_price', 'accdoc_price_bpjs')->where('accdoc_id', $accdocId)->first();
+        $row = DB::table('rsmst_accdocs')->select('accdoc_id', 'accdoc_desc', 'accdoc_price')->where('accdoc_id', $accdocId)->first();
 
         if ($row) {
             $this->selected = [
                 'accdoc_id' => (string) $row->accdoc_id,
                 'accdoc_desc' => (string) ($row->accdoc_desc ?? ''),
                 'accdoc_price' => (int) ($row->accdoc_price ?? 0),
-                'accdoc_price_bpjs' => (int) ($row->accdoc_price_bpjs ?? 0),
             ];
         }
     }
@@ -70,14 +69,13 @@ new class extends Component {
 
         // ── Exact match by accdoc_id ──
         if (ctype_alnum($keyword)) {
-            $exact = DB::table('rsmst_accdocs')->select('accdoc_id', 'accdoc_desc', 'accdoc_price', 'accdoc_price_bpjs')->where('accdoc_id', $keyword)->first();
+            $exact = DB::table('rsmst_accdocs')->select('accdoc_id', 'accdoc_desc', 'accdoc_price')->where('accdoc_id', $keyword)->first();
 
             if ($exact) {
                 $this->dispatchSelected([
                     'accdoc_id' => (string) $exact->accdoc_id,
                     'accdoc_desc' => (string) ($exact->accdoc_desc ?? ''),
                     'accdoc_price' => (int) ($exact->accdoc_price ?? 0),
-                    'accdoc_price_bpjs' => (int) ($exact->accdoc_price_bpjs ?? 0),
                 ]);
                 return;
             }
@@ -87,7 +85,7 @@ new class extends Component {
         $upper = mb_strtoupper($keyword);
 
         $rows = DB::table('rsmst_accdocs')
-            ->select('accdoc_id', 'accdoc_desc', 'accdoc_price', 'accdoc_price_bpjs')
+            ->select('accdoc_id', 'accdoc_desc', 'accdoc_price')
             ->where(function ($q) use ($upper) {
                 $q->where(DB::raw('upper(accdoc_desc)'), 'like', "%{$upper}%")->orWhere(DB::raw('upper(accdoc_id)'), 'like', "%{$upper}%");
             })
@@ -102,7 +100,6 @@ new class extends Component {
                     'accdoc_id' => (string) $row->accdoc_id,
                     'accdoc_desc' => (string) ($row->accdoc_desc ?? ''),
                     'accdoc_price' => (int) ($row->accdoc_price ?? 0),
-                    'accdoc_price_bpjs' => (int) ($row->accdoc_price_bpjs ?? 0),
                     'label' => $row->accdoc_desc ?: '-',
                     'hint' => 'Kode: ' . $row->accdoc_id . ' • Rp ' . number_format($row->accdoc_price ?? 0),
                 ],
@@ -169,7 +166,6 @@ new class extends Component {
             'accdoc_id' => $this->options[$index]['accdoc_id'] ?? '',
             'accdoc_desc' => $this->options[$index]['accdoc_desc'] ?? '',
             'accdoc_price' => $this->options[$index]['accdoc_price'] ?? 0,
-            'accdoc_price_bpjs' => $this->options[$index]['accdoc_price_bpjs'] ?? 0,
         ]);
     }
 

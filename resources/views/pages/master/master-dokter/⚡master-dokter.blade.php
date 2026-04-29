@@ -339,17 +339,6 @@ new class extends Component {
                                             </div>
                                         </div>
 
-                                        {{-- Tarif BPJS --}}
-                                        <div class="mt-2 pt-1.5 border-t border-gray-100 dark:border-gray-800">
-                                            <div class="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 text-left mb-0.5">Tarif BPJS</div>
-                                            <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-sm">
-                                                <span class="text-gray-600 dark:text-gray-300 text-left">Tarif Poli BPJS</span>
-                                                <span class="font-mono text-gray-900 dark:text-gray-100">Rp {{ number_format((float) $row->poli_price_bpjs) }}</span>
-
-                                                <span class="text-gray-600 dark:text-gray-300 text-left">Tarif UGD BPJS</span>
-                                                <span class="font-mono text-gray-900 dark:text-gray-100">Rp {{ number_format((float) $row->ugd_price_bpjs) }}</span>
-                                            </div>
-                                        </div>
                                     </td>
 
                                     {{-- STATUS: toggle inline (rata tengah) --}}

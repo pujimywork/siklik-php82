@@ -113,14 +113,10 @@ new class extends Component {
             return;
         }
 
-        $klaimStatus =
-            DB::table('rsmst_klaimtypes')
-                ->where('klaim_id', $this->dataDaftarPoliRJ['klaimId'] ?? '')
-                ->value('klaim_status') ?? 'UMUM';
-
+        // Klinik pratama: 1 tarif (accdoc_price). Tdk ada tarif BPJS terpisah.
         $this->formEntryJasaDokter['jasaDokterId'] = $payload['accdoc_id'];
         $this->formEntryJasaDokter['jasaDokterDesc'] = $payload['accdoc_desc'];
-        $this->formEntryJasaDokter['jasaDokterPrice'] = $klaimStatus === 'BPJS' ? $payload['accdoc_price_bpjs'] : $payload['accdoc_price'];
+        $this->formEntryJasaDokter['jasaDokterPrice'] = $payload['accdoc_price'] ?? 0;
 
         $this->dispatch('focus-input-tarif');
     }

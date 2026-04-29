@@ -43,14 +43,13 @@ new class extends Component {
 
     protected function loadSelected(string $acteId): void
     {
-        $row = DB::table('rsmst_actemps')->select('acte_id', 'acte_desc', 'acte_price', 'acte_price_bpjs')->where('acte_id', $acteId)->first();
+        $row = DB::table('rsmst_actemps')->select('acte_id', 'acte_desc', 'acte_price')->where('acte_id', $acteId)->first();
 
         if ($row) {
             $this->selected = [
                 'acte_id' => (string) $row->acte_id,
                 'acte_desc' => (string) ($row->acte_desc ?? ''),
                 'acte_price' => (int) ($row->acte_price ?? 0),
-                'acte_price_bpjs' => (int) ($row->acte_price_bpjs ?? 0),
             ];
         }
     }
@@ -70,14 +69,13 @@ new class extends Component {
 
         // ── Exact match by acte_id ──
         if (ctype_alnum($keyword)) {
-            $exact = DB::table('rsmst_actemps')->select('acte_id', 'acte_desc', 'acte_price', 'acte_price_bpjs')->where('acte_id', $keyword)->first();
+            $exact = DB::table('rsmst_actemps')->select('acte_id', 'acte_desc', 'acte_price')->where('acte_id', $keyword)->first();
 
             if ($exact) {
                 $this->dispatchSelected([
                     'acte_id' => (string) $exact->acte_id,
                     'acte_desc' => (string) ($exact->acte_desc ?? ''),
                     'acte_price' => (int) ($exact->acte_price ?? 0),
-                    'acte_price_bpjs' => (int) ($exact->acte_price_bpjs ?? 0),
                 ]);
                 return;
             }
@@ -87,7 +85,7 @@ new class extends Component {
         $upper = mb_strtoupper($keyword);
 
         $rows = DB::table('rsmst_actemps')
-            ->select('acte_id', 'acte_desc', 'acte_price', 'acte_price_bpjs')
+            ->select('acte_id', 'acte_desc', 'acte_price')
             ->where(function ($q) use ($keyword, $upper) {
                 $q->where(DB::raw('upper(acte_desc)'), 'like', "%{$upper}%")->orWhere(DB::raw('upper(acte_id)'), 'like', "%{$upper}%");
             })
@@ -102,7 +100,6 @@ new class extends Component {
                     'acte_id' => (string) $row->acte_id,
                     'acte_desc' => (string) ($row->acte_desc ?? ''),
                     'acte_price' => (int) ($row->acte_price ?? 0),
-                    'acte_price_bpjs' => (int) ($row->acte_price_bpjs ?? 0),
                     'label' => $row->acte_desc ?: '-',
                     'hint' => 'Kode: ' . $row->acte_id . ' • Rp ' . number_format($row->acte_price ?? 0),
                 ],
@@ -169,7 +166,6 @@ new class extends Component {
             'acte_id' => $this->options[$index]['acte_id'] ?? '',
             'acte_desc' => $this->options[$index]['acte_desc'] ?? '',
             'acte_price' => $this->options[$index]['acte_price'] ?? 0,
-            'acte_price_bpjs' => $this->options[$index]['acte_price_bpjs'] ?? 0,
         ]);
     }
 

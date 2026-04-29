@@ -150,8 +150,9 @@ new class extends Component {
         }
 
         // ── RS Admin ──
+        // Klinik pratama: 1 tarif (poli_price). Tdk ada poli_price_bpjs.
         $dokter = DB::table('rsmst_doctors')
-            ->select('rs_admin', 'poli_price', 'poli_price_bpjs')
+            ->select('rs_admin', 'poli_price')
             ->where('dr_id', $data['drId'] ?? '')
             ->first();
 
@@ -164,12 +165,7 @@ new class extends Component {
         }
 
         // ── Poli Price ──
-        $klaimStatus =
-            DB::table('rsmst_klaimtypes')
-                ->where('klaim_id', $data['klaimId'] ?? '')
-                ->value('klaim_status') ?? 'UMUM';
-
-        $dokterPoliPrice = $klaimStatus === 'BPJS' ? $dokter->poli_price_bpjs ?? 0 : $dokter->poli_price ?? 0;
+        $dokterPoliPrice = (int) ($dokter->poli_price ?? 0);
 
         $data['poliPrice'] = isset($data['poliPrice']) ? (int) ($hdr->poli_price ?? 0) : (int) $dokterPoliPrice;
 
