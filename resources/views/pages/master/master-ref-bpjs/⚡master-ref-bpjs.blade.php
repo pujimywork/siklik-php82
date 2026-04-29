@@ -59,21 +59,14 @@ new class extends Component {
                 return;
             }
 
-            $exists = DB::table('ref_bpjs_table')->where('ref_keterangan', $key)->exists();
-            if ($exists) {
-                DB::table('ref_bpjs_table')
-                    ->where('ref_keterangan', $key)
-                    ->update([
-                        'ref_json'   => $jsonNew,
-                        'updated_at' => DB::raw('SYSTIMESTAMP'),
-                    ]);
-            } else {
-                DB::table('ref_bpjs_table')->insert([
-                    'ref_keterangan' => $key,
-                    'ref_json'       => $jsonNew,
-                    'updated_at'     => DB::raw('SYSTIMESTAMP'),
-                ]);
-            }
+            // Schema siklik (existing): ref_keterangan PK + ref_json CLOB.
+            // Pola siklik-lite: delete-then-insert (lebih aman utk Oracle CLOB
+            // update lewat Eloquent).
+            DB::table('ref_bpjs_table')->where('ref_keterangan', $key)->delete();
+            DB::table('ref_bpjs_table')->insert([
+                'ref_keterangan' => $key,
+                'ref_json'       => $jsonNew,
+            ]);
 
             $this->dispatch('toast', type: 'success',
                 message: "{$key}: cache lokal di-update (" . count($list) . " entries).",
@@ -122,8 +115,7 @@ new class extends Component {
     public function refRows(): array
     {
         $rows = DB::table('ref_bpjs_table')
-            ->select('ref_keterangan', 'ref_json',
-                DB::raw("to_char(updated_at, 'dd/mm/yyyy hh24:mi:ss') as updated_at_str"))
+            ->select('ref_keterangan', 'ref_json')
             ->get()
             ->keyBy('ref_keterangan');
 
@@ -135,10 +127,7 @@ new class extends Component {
                 $decoded = json_decode($row->ref_json, true);
                 $count = is_array($decoded) ? count($decoded) : 0;
             }
-            $out[$cat['key']] = [
-                'count'      => $count,
-                'updated_at' => $row->updated_at_str ?? null,
-            ];
+            $out[$cat['key']] = ['count' => $count];
         }
         return $out;
     }
@@ -167,13 +156,12 @@ new class extends Component {
                             <th class="px-4 py-3 font-semibold w-1/4">Kategori</th>
                             <th class="px-4 py-3 font-semibold">Deskripsi</th>
                             <th class="px-4 py-3 font-semibold w-24 text-right">Jumlah</th>
-                            <th class="px-4 py-3 font-semibold w-48">Last Sync</th>
                             <th class="px-4 py-3 font-semibold w-32 text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="text-gray-700 divide-y divide-gray-200 dark:divide-gray-700 dark:text-gray-200">
                         @foreach ($categories as $cat)
-                            @php $meta = $this->refRows[$cat['key']] ?? ['count' => 0, 'updated_at' => null]; @endphp
+                            @php $meta = $this->refRows[$cat['key']] ?? ['count' => 0]; @endphp
                             <tr wire:key="ref-bpjs-{{ $cat['key'] }}" class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
                                 <td class="px-4 py-3 font-semibold">{{ $cat['key'] }}</td>
                                 <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ $cat['desc'] }}</td>
@@ -185,9 +173,6 @@ new class extends Component {
                                     @else
                                         <span class="text-xs text-gray-400">—</span>
                                     @endif
-                                </td>
-                                <td class="px-4 py-3 text-xs">
-                                    {{ $meta['updated_at'] ?? '— belum pernah sync —' }}
                                 </td>
                                 <td class="px-4 py-3 text-center">
                                     <x-secondary-button type="button"
