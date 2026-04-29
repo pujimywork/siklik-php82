@@ -464,7 +464,7 @@ new class extends Component {
             return;
         }
 
-        $empId = auth()->user()->emp_id ?? null;
+        $empId = auth()->user()->kasir_id ?? null;
         if (!$empId) {
             $this->dispatch('toast', type: 'error', message: 'EMP ID belum diisi di profil user.');
             return;

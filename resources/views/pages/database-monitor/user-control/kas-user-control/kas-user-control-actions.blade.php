@@ -30,7 +30,7 @@ new class extends Component {
     #[On('kasUserControl.openManage')]
     public function openManage(int $userId): void
     {
-        $user = DB::table('users')->select('id', 'name', 'email', 'emp_id')->where('id', $userId)->first();
+        $user = DB::table('users')->select('id', 'name', 'email', 'kasir_id')->where('id', $userId)->first();
 
         if (!$user) {
             $this->dispatch('toast', type: 'error', message: 'User tidak ditemukan.');
@@ -40,7 +40,7 @@ new class extends Component {
         $this->userId = $user->id;
         $this->userName = $user->name ?? '';
         $this->userEmail = $user->email ?? '';
-        $this->empId = $user->emp_id ? (string) $user->emp_id : null;
+        $this->empId = $user->kasir_id ? (string) $user->kasir_id : null;
         $this->empName = null;
         $this->searchKas = '';
         $this->filterTipe = '';

@@ -57,7 +57,7 @@ new class extends Component {
     {
         $searchKeyword = trim($this->searchKeyword);
 
-        $query = DB::table('users as u')->select('u.id', 'u.myuser_code', 'u.myuser_name', 'u.email', 'u.myuser_sip', 'u.myuser_ttd_image', 'u.emp_id', DB::raw("TO_CHAR(u.created_at, 'dd/mm/yyyy HH24:MI:SS') as created_at"))->orderBy('u.myuser_name', 'asc');
+        $query = DB::table('users as u')->select('u.id', 'u.myuser_code', 'u.myuser_name', 'u.email', 'u.myuser_sip', 'u.myuser_ttd_image', 'u.kasir_id', DB::raw("TO_CHAR(u.created_at, 'dd/mm/yyyy HH24:MI:SS') as created_at"))->orderBy('u.myuser_name', 'asc');
 
         if ($this->filterRole !== '') {
             $query->whereIn('u.id', function ($sub) {
@@ -341,8 +341,8 @@ new class extends Component {
                                     </td>
 
                                     <td class="px-4 py-3">
-                                        @if ($row->emp_id)
-                                            <x-badge variant="alternative">{{ $row->emp_id }}</x-badge>
+                                        @if ($row->kasir_id)
+                                            <x-badge variant="alternative">{{ $row->kasir_id }}</x-badge>
                                         @else
                                             <span class="text-gray-400">—</span>
                                         @endif

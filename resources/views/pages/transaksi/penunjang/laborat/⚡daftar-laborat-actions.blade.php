@@ -58,7 +58,7 @@ new class extends Component {
         }
 
         // Cek emp_id user
-        if (empty(auth()->user()->emp_id)) {
+        if (empty(auth()->user()->kasir_id)) {
             $this->dispatch('toast', type: 'warning', message: 'EMP ID belum diisi di profil user Anda. Data pemeriksa tidak bisa otomatis terisi. Hubungi administrator.');
         }
 
@@ -266,7 +266,7 @@ new class extends Component {
                     $updateData = ['checkup_status' => 'C'];
 
                     if (empty($hdr->kasir_id)) {
-                        $authEmpId = auth()->user()->emp_id ?? null;
+                        $authEmpId = auth()->user()->kasir_id ?? null;
                         if (!$authEmpId) {
                             throw new \RuntimeException('EMP ID belum diisi di profil user Anda. Hubungi administrator.');
                         }

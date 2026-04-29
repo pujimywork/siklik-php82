@@ -24,9 +24,9 @@ new class extends Component {
     public string $password_confirmation = '';
     public string $myuser_sip = '';
 
-    /* ── EMP ID — diisi via LOV employer ── */
-    public ?string $emp_id = null;
-    public ?string $emp_name = null; // tampilan saja, tidak disimpan ke users
+    /* ── Kasir ID — diisi via LOV kasir (TKMST_KASIRS) ── */
+    public ?string $kasirId = null;
+    public ?string $kasirName = null; // tampilan saja, tidak disimpan ke users
 
     public $myuser_ttd_image = null;
     public ?string $existing_ttd_image = null;
@@ -75,13 +75,13 @@ new class extends Component {
         $this->email = $user->email ?? '';
         $this->myuser_sip = $user->myuser_sip ?? '';
         $this->existing_ttd_image = $user->myuser_ttd_image ?? null;
-        $this->emp_id = $user->emp_id ? (string) $user->emp_id : null;
-        $this->emp_name = null;
+        $this->kasirId = $user->kasir_id ? (string) $user->kasir_id : null;
+        $this->kasirName = null;
 
-        if ($this->emp_id) {
+        if ($this->kasirId) {
             // Siklik: emp_id user dipetakan ke kasir_id di TKMST_KASIRS.
-            $kasir = DB::table('tkmst_kasirs')->select('kasir_name')->where('kasir_id', $this->emp_id)->first();
-            $this->emp_name = $kasir?->kasir_name ?? null;
+            $kasir = DB::table('tkmst_kasirs')->select('kasir_name')->where('kasir_id', $this->kasirId)->first();
+            $this->kasirName = $kasir?->kasir_name ?? null;
         }
 
         $this->incrementVersion('modal');
@@ -101,17 +101,18 @@ new class extends Component {
     /* ── LOV Employer selected ── */
 
     #[On('lov.selected.kasir-user-control')]
-    public function onEmployerSelected(string $target, ?array $payload): void
+    public function onKasirSelected(string $target, ?array $payload): void
     {
         if ($payload === null) {
-            $this->emp_id = null;
-            $this->emp_name = null;
+            $this->kasirId = null;
+            $this->kasirName = null;
         } else {
-            $this->emp_id = $payload['emp_id'] ?? null;
-            $this->emp_name = $payload['emp_name'] ?? null;
+            // lov-kasir payload bawa kasir_id (native) + emp_id (alias compat).
+            $this->kasirId = $payload['kasir_id'] ?? $payload['emp_id'] ?? null;
+            $this->kasirName = $payload['kasir_name'] ?? $payload['emp_name'] ?? null;
         }
 
-        $this->resetErrorBag('emp_id');
+        $this->resetErrorBag('kasirId');
     }
 
     /* ── Validasi ── */
@@ -123,7 +124,7 @@ new class extends Component {
             'myuser_name' => 'required|string|max:100',
             'email' => 'required|email|max:100|unique:users,email',
             'myuser_sip' => 'nullable|string|max:50',
-            'emp_id' => 'nullable|string|max:20',
+            'kasirId'    => 'nullable|string|max:25',
             'myuser_ttd_image' => 'nullable|image|max:1024',
         ];
 
@@ -159,7 +160,7 @@ new class extends Component {
             'email' => 'Email',
             'password' => 'Password',
             'myuser_sip' => 'SIP',
-            'emp_id' => 'EMP ID Karyawan',
+            'kasirId'    => 'Kasir',
             'myuser_ttd_image' => 'Gambar TTD',
         ];
     }
@@ -183,7 +184,7 @@ new class extends Component {
                     'name' => $this->myuser_name,
                     'email' => $this->email,
                     'myuser_sip' => $this->myuser_sip,
-                    'emp_id' => $this->emp_id ?: null,
+                    'kasir_id' => $this->kasirId ?: null,
                     'updated_at' => DB::raw('SYSDATE'),
                 ];
 
@@ -269,8 +270,8 @@ new class extends Component {
         $this->formMode = 'create';
         $this->userId = null;
         $this->existing_ttd_image = null;
-        $this->emp_id = null;
-        $this->emp_name = null;
+        $this->kasirId = null;
+        $this->kasirName = null;
         $this->reset(['myuser_code', 'myuser_name', 'email', 'password', 'password_confirmation', 'myuser_sip', 'myuser_ttd_image']);
     }
 };
@@ -364,16 +365,15 @@ new class extends Component {
                                 <x-input-error :messages="$errors->get('email')" class="mt-1" />
                             </div>
 
-                            {{-- LOV Employer (EMP ID) --}}
-                            <div x-ref="lovEmployer">
-                                <livewire:lov.kasir.lov-kasir target="kasir-user-control" label="Karyawan (EMP ID)"
-                                    :initialEmpId="$emp_id"
+                            {{-- LOV Kasir (mapping user → TKMST_KASIRS.kasir_id) --}}
+                            <div x-ref="lovKasir">
+                                <livewire:lov.kasir.lov-kasir target="kasir-user-control" label="Kasir"
+                                    :initialEmpId="$kasirId"
                                     wire:key="lov-kasir-{{ $userId ?? 'new' }}-{{ $renderVersions['modal'] ?? 0 }}" />
-                                <x-input-error :messages="$errors->get('emp_id')" class="mt-1" />
+                                <x-input-error :messages="$errors->get('kasirId')" class="mt-1" />
                                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                    🔑 EMP ID dipakai otomatis saat insert transaksi (kolom <code
-                                        class="font-mono">emp_id</code>).
-                                    Pilih dari data karyawan aktif di IMMST_EMPLOYERS.
+                                    🔑 Mapping user → kasir. Dipakai otomatis saat insert transaksi
+                                    (kolom <code class="font-mono">kasir_id</code> di tabel txn).
                                 </p>
                             </div>
 
@@ -433,17 +433,17 @@ new class extends Component {
                             </div>
 
                             {{-- Card karyawan terpilih --}}
-                            @if ($emp_id && $emp_name)
+                            @if ($kasirId && $kasirName)
                                 <div
                                     class="p-3 border border-emerald-200 rounded-xl bg-emerald-50 dark:border-emerald-800/40 dark:bg-emerald-900/10">
                                     <p class="mb-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                                         Karyawan terhubung
                                     </p>
                                     <p class="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
-                                        {{ $emp_name }}
+                                        {{ $kasirName }}
                                     </p>
                                     <p class="text-xs font-mono text-emerald-600 dark:text-emerald-400">
-                                        {{ $emp_id }}
+                                        {{ $kasirId }}
                                     </p>
                                 </div>
                             @endif

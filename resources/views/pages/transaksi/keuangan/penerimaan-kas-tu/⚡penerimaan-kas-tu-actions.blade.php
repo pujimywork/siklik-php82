@@ -115,14 +115,15 @@ new class extends Component {
             'ciNominal.min'      => 'Nominal minimal Rp 1.',
         ]);
 
-        // Resolve kasir_id dari auth user (USERS.myuser_code = TKMST_KASIRS.kasir_id).
-        $myuserCode = auth()->user()->myuser_code ?? null;
-        $kasirId = $myuserCode
-            ? DB::table('tkmst_kasirs')->where('kasir_id', $myuserCode)->where('active_status', '1')->value('kasir_id')
-            : null;
+        // Resolve kasir_id dari USERS.kasir_id (mapping di User Control).
+        $kasirId = auth()->user()->kasir_id ?? null;
+        if ($kasirId) {
+            $valid = DB::table('tkmst_kasirs')->where('kasir_id', $kasirId)->where('active_status', '1')->exists();
+            if (!$valid) $kasirId = null;
+        }
         if (!$kasirId) {
             $this->dispatch('toast', type: 'error',
-                message: 'Profil kasir anda belum terdaftar di master kasir.');
+                message: 'Profil kasir Anda belum di-mapping (kasir_id). Hubungi admin via User Control.');
             return;
         }
 
