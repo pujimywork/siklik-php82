@@ -483,17 +483,29 @@ new class extends Component {
     private function loadAlergi(string $jenis): void
     {
         try {
-            $resp = $this->getAlergi($jenis)->getOriginalContent();
-            $code = $resp['metadata']['code'] ?? 0;
+            // ===== 1) Coba ambil dari cache lokal ref_bpjs_table =====
+            $refKey = match ($jenis) {
+                '01' => 'Alergi Makanan',
+                '02' => 'Alergi Udara',
+                '03' => 'Alergi Obat',
+            };
+            $list = $this->loadRefBpjsCache($refKey);
+            $source = 'cache';
 
-            if ($code != 200) {
-                $msg = $resp['metadata']['message'] ?? "code {$code}";
-                $this->dispatch('toast', type: 'error',
-                    message: 'BPJS getAlergi: ' . $msg, title: 'BPJS');
-                return;
+            // ===== 2) Cache kosong → fallback hit BPJS API =====
+            if ($list === null) {
+                $resp = $this->getAlergi($jenis)->getOriginalContent();
+                $code = $resp['metadata']['code'] ?? 0;
+                if ($code != 200) {
+                    $msg = $resp['metadata']['message'] ?? "code {$code}";
+                    $this->dispatch('toast', type: 'error',
+                        message: 'BPJS getAlergi: ' . $msg, title: 'BPJS');
+                    return;
+                }
+                $list = $resp['response']['list'] ?? $resp['response'] ?? [];
+                $source = 'api';
             }
 
-            $list = $resp['response']['list'] ?? $resp['response'] ?? [];
             $opts = collect($list)
                 ->map(fn($r) => [
                     'kdAlergi' => (string) ($r['kdAlergi'] ?? $r['kode'] ?? ''),
@@ -511,11 +523,33 @@ new class extends Component {
                 '02' => $this->alergiUdaraOptions   = $opts,
                 '03' => $this->alergiObatOptions    = $opts,
             };
+
+            if ($source === 'api') {
+                $this->dispatch('toast', type: 'info',
+                    message: 'Cache lokal kosong — diambil dari BPJS langsung. Sebaiknya sync via Master > Ref BPJS.',
+                    title: 'BPJS', duration: 5000);
+            }
         } catch (\Exception $e) {
             \Log::error('PCare getAlergi exception', ['jenis' => $jenis, 'error' => $e->getMessage()]);
             $this->dispatch('toast', type: 'error',
                 message: 'Error PCare: ' . $e->getMessage(), title: 'BPJS');
         }
+    }
+
+    /**
+     * Read decoded list dari ref_bpjs_table. Return null kalau row tidak ada
+     * atau JSON invalid (caller harus fallback ke API).
+     */
+    private function loadRefBpjsCache(string $refKey): ?array
+    {
+        $row = DB::table('ref_bpjs_table')
+            ->where('ref_keterangan', $refKey)
+            ->value('ref_json');
+
+        if (!$row) return null;
+
+        $decoded = json_decode($row, true);
+        return is_array($decoded) ? $decoded : null;
     }
 
     public function selectAlergi(string $jenis, string $kdAlergi, string $nmAlergi): void

@@ -29,6 +29,9 @@ Route::middleware(['auth'])->group(function () {
     Route::livewire('/master/diagnosa', 'pages::master.master-diagnosa.master-diagnosa')
         ->name('master.diagnosa');
 
+    Route::livewire('/master/ref-bpjs', 'pages::master.master-ref-bpjs.master-ref-bpjs')
+        ->name('master.ref-bpjs');
+
     Route::livewire('/master/laborat', 'pages::master.master-laborat.clab.master-clab')
         ->name('master.laborat');
 

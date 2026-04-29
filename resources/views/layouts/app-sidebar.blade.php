@@ -29,6 +29,7 @@
             ['label' => 'Master Cara Keluar',     'route' => 'master.cara-keluar'],
             ['label' => 'Master Parameter',       'route' => 'master.parameter'],
             ['label' => 'Master Alat Medis',      'route' => 'master.medik'],
+            ['label' => 'Master Ref BPJS',        'route' => 'master.ref-bpjs'],
         ],
         'Master Tarif Jasa' => [
             ['label' => 'Master Jasa Dokter',     'route' => 'master.jasa-dokter'],
