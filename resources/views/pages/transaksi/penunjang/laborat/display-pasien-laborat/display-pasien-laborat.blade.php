@@ -31,7 +31,7 @@ new class extends Component {
         $header = DB::table('lbtxn_checkuphdrs as a')
             ->join('rsmst_pasiens as c', 'a.reg_no', '=', 'c.reg_no')
             ->leftJoin('rsmst_doctors as d', 'a.dr_id', '=', 'd.dr_id')
-            ->leftJoin('immst_employers as e', 'a.emp_id', '=', 'e.emp_id')
+            ->leftJoin('tkmst_kasirs as e', 'a.kasir_id', '=', 'e.kasir_id')
             ->select(
                 'a.checkup_no',
                 DB::raw("to_char(a.checkup_date,'dd/mm/yyyy hh24:mi:ss') as checkup_date"),
@@ -42,8 +42,8 @@ new class extends Component {
                 'c.address',
                 'a.dr_id',
                 'd.dr_name',
-                'a.emp_id',
-                'e.emp_name',
+                'a.kasir_id',
+                'e.kasir_name',
                 'a.checkup_status',
                 'a.status_rjri',
                 'a.ref_no',
@@ -78,8 +78,8 @@ new class extends Component {
             'umur' => $umur,
             'address' => $header->address ?? '-',
             'drName' => $header->dr_name ?? '-',
-            'empId' => $header->emp_id ?? null,
-            'empName' => $header->emp_name ?? null,
+            'empId' => $header->kasir_id ?? null,
+            'empName' => $header->kasir_name ?? null,
             'checkupDate' => $header->checkup_date ?? '-',
             'statusRjri' => $header->status_rjri ?? '-',
             'refNo' => $header->ref_no ?? '-',

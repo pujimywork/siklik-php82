@@ -1,33 +1,20 @@
 <?php
 
 /**
- * resources/views/livewire/lov/employer/lov-employer.blade.php
+ * LOV Kasir — sumber: TKMST_KASIRS (siklik klinik pratama).
  *
- * LOV Karyawan dari tabel IMMST_EMPLOYERS.
+ * Sebelumnya pakai IMMST_EMPLOYERS (sirus only) — tabel itu nggak ada
+ * di siklik. Klinik pratama cuma punya master kasir simple
+ * (kasir_id, kasir_name, active_status).
  *
- * Payload dispatch ke parent:
+ * Payload dispatch ke parent (compat alias emp_id/emp_name supaya
+ * kode lama yg pakai LOV ini nggak perlu di-rename):
  *   [
- *     'emp_id'    => '...',
- *     'emp_name'  => '...',
- *     'emp_index' => '...',
- *     'emp_grade' => '...',
- *     'bu_id'     => '...',
- *     'phone'     => '...',
- *     'address'   => '...',
+ *     'emp_id'   => kasir_id,    // alias (compat)
+ *     'emp_name' => kasir_name,  // alias (compat)
+ *     'kasir_id'   => '...',
+ *     'kasir_name' => '...',
  *   ]
- *
- * Cara pakai:
- *   <livewire:lov.kasir.lov-kasir
- *       target="kasir-user-control"
- *       :initialEmpId="$emp_id"
- *       wire:key="lov-kasir-{{ $userId }}" />
- *
- *   #[On('lov.selected.kasir-user-control')]
- *   public function onEmployerSelected(string $target, ?array $payload): void
- *   {
- *       $this->emp_id   = $payload['emp_id']   ?? null;
- *       $this->emp_name = $payload['emp_name']  ?? null;
- *   }
  */
 
 use Livewire\Component;
@@ -36,8 +23,8 @@ use Livewire\Attributes\Reactive;
 
 new class extends Component {
     public string $target = 'default';
-    public string $label = 'Karyawan (EMP ID)';
-    public string $placeholder = 'Ketik EMP ID atau nama karyawan...';
+    public string $label = 'Kasir';
+    public string $placeholder = 'Ketik kode/nama kasir...';
 
     public string $search = '';
     public array $options = [];
@@ -75,19 +62,24 @@ new class extends Component {
 
     protected function loadSelected(string $empId): void
     {
-        $row = $this->baseQuery()->where('emp_id', $empId)->first();
+        // Load tanpa filter active supaya record lama tetap nampil saat edit.
+        $row = DB::table('tkmst_kasirs')
+            ->select('kasir_id', 'kasir_name', 'active_status')
+            ->where('kasir_id', $empId)
+            ->first();
 
         if ($row) {
             $this->selected = $this->buildPayload($row);
         }
     }
 
-    /* ── Query dasar ── */
+    /* ── Query dasar — TKMST_KASIRS, hanya yang aktif ── */
 
     protected function baseQuery(): \Illuminate\Database\Query\Builder
     {
-        return DB::table('immst_employers')->select('emp_id', 'emp_name', 'emp_index', 'emp_grade', 'bu_id', 'phone', 'address', 'active_record');
-        //->where('active_record', '1') // hanya karyawan aktif
+        return DB::table('tkmst_kasirs')
+            ->select('kasir_id', 'kasir_name', 'active_status')
+            ->where('active_status', '1');
     }
 
     /* ── Pencarian real-time ── */
@@ -107,8 +99,8 @@ new class extends Component {
 
         $upperKeyword = mb_strtoupper($keyword);
 
-        // Exact match by emp_id → langsung pilih
-        $exactRow = $this->baseQuery()->where('emp_id', $keyword)->first();
+        // Exact match by kasir_id → langsung pilih
+        $exactRow = $this->baseQuery()->where('kasir_id', $keyword)->first();
 
         if ($exactRow) {
             $this->dispatchSelected($this->buildPayload($exactRow));
@@ -119,15 +111,16 @@ new class extends Component {
         $rows = $this->baseQuery()
             ->where(
                 fn($q) => $q
-                    ->where('emp_id', 'like', "%{$keyword}%")
-                    ->orWhereRaw('UPPER(emp_name) LIKE ?', ["%{$upperKeyword}%"])
-                    ->orWhereRaw('UPPER(emp_index) LIKE ?', ["%{$upperKeyword}%"]),
+                    ->where('kasir_id', 'like', "%{$keyword}%")
+                    ->orWhereRaw('UPPER(kasir_name) LIKE ?', ["%{$upperKeyword}%"]),
             )
-            ->orderBy('emp_name')
+            ->orderBy('kasir_name')
             ->limit(50)
             ->get();
 
-        $this->options = $rows->map(fn($row) => array_merge($this->buildPayload($row), ['label' => (string) ($row->emp_name ?: $row->emp_id)]))->toArray();
+        $this->options = $rows->map(fn($row) => array_merge($this->buildPayload($row), [
+            'label' => (string) ($row->kasir_name ?: $row->kasir_id),
+        ]))->toArray();
 
         $this->isOpen = count($this->options) > 0;
         $this->selectedIndex = 0;
@@ -142,13 +135,12 @@ new class extends Component {
     protected function buildPayload(object $row): array
     {
         return [
-            'emp_id' => (string) ($row->emp_id ?? ''),
-            'emp_name' => (string) ($row->emp_name ?? ''),
-            'emp_index' => (string) ($row->emp_index ?? ''),
-            'emp_grade' => (string) ($row->emp_grade ?? ''),
-            'bu_id' => (string) ($row->bu_id ?? ''),
-            'phone' => (string) ($row->phone ?? ''),
-            'address' => (string) ($row->address ?? ''),
+            // Compat alias supaya parent yg masih pakai emp_id/emp_name jalan
+            'emp_id'     => (string) ($row->kasir_id ?? ''),
+            'emp_name'   => (string) ($row->kasir_name ?? ''),
+            // Native key TKMST_KASIRS
+            'kasir_id'   => (string) ($row->kasir_id ?? ''),
+            'kasir_name' => (string) ($row->kasir_name ?? ''),
         ];
     }
 
@@ -259,29 +251,8 @@ new class extends Component {
                 @endif
             </div>
 
-            {{-- Info subtle --}}
-            <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1">
-                @if (!empty($selected['emp_index']))
-                    <span class="text-[10px] text-gray-400 dark:text-gray-600">
-                        Index: <span class="font-mono">{{ $selected['emp_index'] }}</span>
-                    </span>
-                @endif
-                @if (!empty($selected['emp_grade']))
-                    <span class="text-[10px] text-gray-400 dark:text-gray-600">
-                        Grade: {{ $selected['emp_grade'] }}
-                    </span>
-                @endif
-                @if (!empty($selected['bu_id']))
-                    <span class="text-[10px] text-gray-400 dark:text-gray-600">
-                        BU: {{ $selected['bu_id'] }}
-                    </span>
-                @endif
-                @if (!empty($selected['phone']))
-                    <span class="text-[10px] text-gray-400 dark:text-gray-600">
-                        ☎ {{ $selected['phone'] }}
-                    </span>
-                @endif
-            </div>
+            {{-- Schema klinik simpel — tdk ada emp_index/emp_grade/bu_id/phone.
+                 Display id + nama saja sudah cukup di mode selected. --}}
         @endif
 
         {{-- Dropdown list --}}
@@ -290,35 +261,14 @@ new class extends Component {
                 class="absolute z-50 w-full mt-2 overflow-hidden bg-white border border-gray-200 shadow-lg rounded-xl dark:bg-gray-900 dark:border-gray-700">
                 <ul class="overflow-y-auto divide-y divide-gray-100 max-h-72 dark:divide-gray-800">
                     @foreach ($options as $index => $option)
-                        <li wire:key="lov-emp-{{ $option['emp_id'] }}-{{ $index }}"
+                        <li wire:key="lov-kasir-{{ $option['kasir_id'] }}-{{ $index }}"
                             x-ref="lovItem{{ $index }}">
                             <x-lov.item wire:click="choose({{ $index }})" :active="$index === $selectedIndex">
-                                <div class="flex items-start justify-between gap-2">
-                                    <div class="flex-1 min-w-0">
-                                        <div class="font-semibold text-gray-900 truncate dark:text-gray-100">
-                                            {{ $option['emp_name'] ?: $option['emp_id'] }}
-                                        </div>
-                                        <div class="flex flex-wrap gap-x-2 gap-y-0 mt-0.5">
-                                            <span class="text-xs font-mono text-gray-500 dark:text-gray-400">
-                                                {{ $option['emp_id'] }}
-                                            </span>
-                                            @if (!empty($option['emp_grade']))
-                                                <span class="text-xs text-gray-400">
-                                                    · {{ $option['emp_grade'] }}
-                                                </span>
-                                            @endif
-                                            @if (!empty($option['bu_id']))
-                                                <span class="text-xs text-gray-400">
-                                                    · {{ $option['bu_id'] }}
-                                                </span>
-                                            @endif
-                                        </div>
-                                    </div>
-                                    @if (!empty($option['phone']))
-                                        <span class="text-[11px] text-gray-400 shrink-0 mt-0.5">
-                                            {{ $option['phone'] }}
-                                        </span>
-                                    @endif
+                                <div class="font-semibold text-gray-900 dark:text-gray-100">
+                                    {{ $option['kasir_name'] ?: $option['kasir_id'] }}
+                                </div>
+                                <div class="text-xs font-mono text-gray-500 dark:text-gray-400">
+                                    {{ $option['kasir_id'] }}
                                 </div>
                             </x-lov.item>
                         </li>
@@ -327,7 +277,7 @@ new class extends Component {
 
                 @if (mb_strlen(trim($search)) >= 1 && count($options) === 0)
                     <div class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                        Karyawan tidak ditemukan.
+                        Kasir tidak ditemukan.
                     </div>
                 @endif
             </div>

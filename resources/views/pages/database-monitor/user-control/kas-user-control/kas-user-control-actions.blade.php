@@ -46,8 +46,8 @@ new class extends Component {
         $this->filterTipe = '';
 
         if ($this->empId) {
-            $emp = DB::table('immst_employers')->select('emp_name')->where('emp_id', $this->empId)->first();
-            $this->empName = $emp?->emp_name ?? null;
+            $kasir = DB::table('tkmst_kasirs')->select('kasir_name')->where('kasir_id', $this->empId)->first();
+            $this->empName = $kasir?->kasir_name ?? null;
         }
 
         $this->loadUserKas();

@@ -100,7 +100,7 @@ new class extends Component {
                 'c.address',
                 'a.dr_id',
                 'f.dr_name',
-                'a.emp_id',
+                'a.kasir_id',
                 'a.checkup_status',
                 'a.status_rjri',
                 'a.ref_no',
@@ -260,15 +260,17 @@ new class extends Component {
                         ]);
                     }
 
-                    // Update header: status, emp_id, waktu_masuk
+                    // Update header: status, kasir_id, waktu_masuk
+                    // (siklik: kolom di LBTXN_CHECKUPHDRS = kasir_id, bukan emp_id;
+                    //  USERS.emp_id user di-mapping ke TKMST_KASIRS.kasir_id)
                     $updateData = ['checkup_status' => 'C'];
 
-                    if (empty($hdr->emp_id)) {
+                    if (empty($hdr->kasir_id)) {
                         $authEmpId = auth()->user()->emp_id ?? null;
                         if (!$authEmpId) {
                             throw new \RuntimeException('EMP ID belum diisi di profil user Anda. Hubungi administrator.');
                         }
-                        $updateData['emp_id'] = $authEmpId;
+                        $updateData['kasir_id'] = $authEmpId;
                     }
 
                     if (empty($hdr->waktu_masuk_pelayanan)) {
@@ -307,10 +309,10 @@ new class extends Component {
                 return;
             }
 
-            // Validasi emp_id harus terisi
+            // Validasi kasir_id harus terisi
             $empId = DB::table('lbtxn_checkuphdrs')
                 ->where('checkup_no', $this->checkupNo)
-                ->value('emp_id');
+                ->value('kasir_id');
 
             if (empty($empId)) {
                 $this->dispatch('toast', type: 'error', message: 'Kolom pemeriksa masih kosong. Pastikan EMP ID sudah diisi di profil user, lalu proses ulang pemeriksaan.');
@@ -484,15 +486,15 @@ new class extends Component {
 
         $header = collect(
             DB::select("
-                SELECT DISTINCT a.emp_id, a.checkup_no,
+                SELECT DISTINCT a.kasir_id, a.checkup_no,
                        to_char(checkup_date,'dd/mm/yyyy hh24:mi:ss') AS checkup_date,
                        a.reg_no, reg_name, a.dr_id, dr_name,
-                       sex, birth_date, c.address, emp_name,
+                       sex, birth_date, c.address, kasir_name,
                        waktu_selesai_pelayanan, checkup_kesimpulan
                 FROM lbtxn_checkuphdrs a
                 JOIN rsmst_pasiens c ON a.reg_no = c.reg_no
                 JOIN rsmst_doctors f ON a.dr_id = f.dr_id
-                LEFT JOIN immst_employers g ON a.emp_id = g.emp_id
+                LEFT JOIN tkmst_kasirs g ON a.kasir_id = g.kasir_id
                 WHERE a.checkup_no = :cno
             ", ['cno' => $this->checkupNo]),
         )->first();
@@ -507,14 +509,14 @@ new class extends Component {
                    lab_result, unit_desc, unit_convert, item_code,
                    normal_f, normal_m, high_limit_m, high_limit_f,
                    low_limit_m, low_limit_f, lowhigh_status, lab_result_status,
-                   sex, a.dr_id, dr_name, a.emp_id, emp_name
+                   sex, a.dr_id, dr_name, a.kasir_id, kasir_name
             FROM lbtxn_checkuphdrs a
             JOIN lbtxn_checkupdtls b ON a.checkup_no = b.checkup_no
             JOIN rsmst_pasiens c ON a.reg_no = c.reg_no
             JOIN lbmst_clabitems d ON b.clabitem_id = d.clabitem_id
             JOIN lbmst_clabs e ON d.clab_id = e.clab_id
             JOIN rsmst_doctors f ON a.dr_id = f.dr_id
-            LEFT JOIN immst_employers g ON a.emp_id = g.emp_id
+            LEFT JOIN tkmst_kasirs g ON a.kasir_id = g.kasir_id
             WHERE a.checkup_no = :cno
               AND nvl(hidden_status,'N') = 'N'
             ORDER BY app_seq, item_seq, clabitem_desc

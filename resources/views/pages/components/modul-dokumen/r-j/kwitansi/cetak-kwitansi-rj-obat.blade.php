@@ -26,7 +26,7 @@ new class extends Component {
                 b.reg_name,
                 b.sex,
                 TO_CHAR(b.birth_date, 'DD/MM/YYYY')       AS birth_date,
-                a.emp_id,
+                a.kasir_id,
                 a.klaim_id,
                 a.dr_id,
                 a.poli_id
@@ -65,10 +65,10 @@ new class extends Component {
         // ── Kalkulasi Total Obat ──
         $totalObat = (int) collect($rincianObat)->sum('obat');
 
-        // ── Nama Kasir ──
+        // ── Nama Kasir (TKMST_KASIRS) ──
         $kasirName = null;
-        if (!empty($hdr->emp_id)) {
-            $kasirName = DB::table('immst_employers')->where('emp_id', $hdr->emp_id)->value('emp_name');
+        if (!empty($hdr->kasir_id)) {
+            $kasirName = DB::table('tkmst_kasirs')->where('kasir_id', $hdr->kasir_id)->value('kasir_name');
         }
 
         // ── Klaim ──

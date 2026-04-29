@@ -79,8 +79,9 @@ new class extends Component {
         $this->emp_name = null;
 
         if ($this->emp_id) {
-            $emp = DB::table('immst_employers')->select('emp_name')->where('emp_id', $this->emp_id)->first();
-            $this->emp_name = $emp?->emp_name ?? null;
+            // Siklik: emp_id user dipetakan ke kasir_id di TKMST_KASIRS.
+            $kasir = DB::table('tkmst_kasirs')->select('kasir_name')->where('kasir_id', $this->emp_id)->first();
+            $this->emp_name = $kasir?->kasir_name ?? null;
         }
 
         $this->incrementVersion('modal');

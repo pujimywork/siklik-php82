@@ -68,20 +68,20 @@ new class extends Component {
     #[Computed]
     public function baseQuery()
     {
-        $query = DB::table('imtxn_receivehdrs as a')
-            ->leftJoin('immst_suppliers as b', 'a.supp_id', '=', 'b.supp_id')
-            ->leftJoin('immst_employers as c', 'a.emp_id', '=', 'c.emp_id')
+        // Siklik schema: TKTXN_RCVHDRS + TKTXN_RCVDTLS, TKMST_SUPPLIERS, TKMST_KASIRS.
+        // Kolom 'shift' & 'sp_no' tdk ada di TKTXN_RCVHDRS (sirus-only).
+        $query = DB::table('tktxn_rcvhdrs as a')
+            ->leftJoin('tkmst_suppliers as b', 'a.supp_id', '=', 'b.supp_id')
+            ->leftJoin('tkmst_kasirs as c', 'a.kasir_id', '=', 'c.kasir_id')
             ->select([
                 'a.rcv_no',
                 DB::raw("to_char(a.rcv_date,'dd/mm/yyyy hh24:mi:ss') as rcv_date_display"),
-                'a.shift',
                 'a.rcv_desc',
                 'a.supp_id',
                 'b.supp_name',
-                'a.emp_id',
-                'c.emp_name',
+                'a.kasir_id',
+                'c.kasir_name',
                 'a.rcv_status',
-                'a.sp_no',
                 DB::raw("(SELECT SUM(
                     (NVL(d.qty,0)*NVL(d.cost_price,0))
                     - ((NVL(d.qty,0)*NVL(d.cost_price,0)) * NVL(d.dtl_persen,0)/100)
@@ -91,14 +91,14 @@ new class extends Component {
                         - NVL(d.dtl_diskon,0))
                       * NVL(d.dtl_persen1,0)/100)
                     - NVL(d.dtl_diskon1,0)
-                ) FROM imtxn_receivedtls d WHERE d.rcv_no = a.rcv_no) as total_detail"),
+                ) FROM tktxn_rcvdtls d WHERE d.rcv_no = a.rcv_no) as total_detail"),
                 'a.rcv_diskon',
                 'a.rcv_ppn',
                 'a.rcv_ppn_status',
                 'a.rcv_materai',
             ])
             ->orderByDesc('a.rcv_date')
-            ->orderByDesc('a.shift');
+            ->orderByDesc('a.rcv_no');
 
         if ($this->searchKeyword !== '') {
             $upper = strtoupper($this->searchKeyword);
@@ -237,8 +237,7 @@ new class extends Component {
                                     class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
                                     <td class="px-4 py-3 font-mono whitespace-nowrap">{{ $row->rcv_no }}</td>
                                     <td class="px-4 py-3 whitespace-nowrap">
-                                        <div>{{ $row->rcv_date_display ?? '-' }}</div>
-                                        <div class="text-gray-400">Shift {{ $row->shift ?? '-' }}</div>
+                                        {{ $row->rcv_date_display ?? '-' }}
                                     </td>
                                     <td class="px-4 py-3">
                                         <div class="font-semibold">{{ $row->supp_name ?? '-' }}</div>
@@ -248,7 +247,7 @@ new class extends Component {
                                     <td class="px-4 py-3 font-mono text-right whitespace-nowrap">Rp
                                         {{ number_format($grandTotal) }}</td>
                                     <td class="px-4 py-3">
-                                        <div>{{ $row->emp_name ?? ($row->emp_id ?? '-') }}</div>
+                                        <div>{{ $row->kasir_name ?? ($row->kasir_id ?? '-') }}</div>
                                         @php
                                             $st = (string) ($row->rcv_status ?? '');
                                             [$stLabel, $stVariant] = match ($st) {

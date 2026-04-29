@@ -27,7 +27,7 @@ new class extends Component {
                 b.address,
                 b.sex,
                 TO_CHAR(b.birth_date, 'DD/MM/YYYY')       AS birth_date,
-                a.emp_id,
+                a.kasir_id,
                 a.rj_diskon,
                 a.klaim_id,
                 a.dr_id,
@@ -68,10 +68,10 @@ new class extends Component {
         // ── Sisa tagihan ──
         $sisa = max(0, $grandTotal - $sudahBayar);
 
-        // ── Nama Kasir dari immst_employers via emp_id di header ──
+        // ── Nama Kasir dari TKMST_KASIRS via kasir_id di header (siklik) ──
         $kasirName = null;
-        if (!empty($hdr->emp_id)) {
-            $kasirName = DB::table('immst_employers')->where('emp_id', $hdr->emp_id)->value('emp_name');
+        if (!empty($hdr->kasir_id)) {
+            $kasirName = DB::table('tkmst_kasirs')->where('kasir_id', $hdr->kasir_id)->value('kasir_name');
         }
 
         // ── Data JSON RJ ──
@@ -154,7 +154,7 @@ new class extends Component {
             'sisa' => $sisa,
 
             // ── Kasir / cetak ──
-            'kasirName' => $kasirName, // ✅ dari immst_employers
+            'kasirName' => $kasirName, // ✅ dari tkmst_kasirs
             'kasirLog' => $dataRJ['AdministrasiRj'] ?? null,
             'tglCetak' => Carbon::now(env('APP_TIMEZONE'))->translatedFormat('d/m/Y'),
             'jamCetak' => Carbon::now(env('APP_TIMEZONE'))->format('H:i'),
