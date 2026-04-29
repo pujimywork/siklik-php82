@@ -27,6 +27,11 @@ new class extends Component {
     public array $alergiUdaraOptions   = [];
     public array $alergiObatOptions    = [];
 
+    /* -------------------------
+     | Rekonsiliasi Obat — input row buat add (cleared setelah submit)
+     * ------------------------- */
+    public array $rekonsiliasiObatInput = ['namaObat' => '', 'dosis' => '', 'rute' => ''];
+
     /* ===============================
      | OPEN REKAM MEDIS PERAWAT - ANAMNESA
      =============================== */
@@ -118,6 +123,9 @@ new class extends Component {
             'riwayatPenyakitDahulu' => [
                 'riwayatPenyakitDahulu' => '',
             ],
+
+            'rekonsiliasiObatTab' => 'Rekonsiliasi Obat',
+            'rekonsiliasiObat'    => [],
 
             'alergiTab' => 'Alergi',
             'alergi' => [
@@ -624,6 +632,56 @@ new class extends Component {
         };
     }
 
+    /* ===============================
+     | REKONSILIASI OBAT (anamnesa)
+     |
+     | List obat yg sedang dikonsumsi pasien sebelum kunjungan ini —
+     | penting buat skrining interaksi obat saat dokter resepkan.
+     | Disimpan di dataDaftarPoliRJ.anamnesa.rekonsiliasiObat[] (array of
+     | {namaObat, dosis, rute}). Pola contek dari siklik-lite.
+     =============================== */
+    public function addRekonsiliasiObat(): void
+    {
+        $namaObat = trim((string) ($this->rekonsiliasiObatInput['namaObat'] ?? ''));
+        $dosis    = trim((string) ($this->rekonsiliasiObatInput['dosis'] ?? ''));
+        $rute     = trim((string) ($this->rekonsiliasiObatInput['rute'] ?? ''));
+
+        if ($namaObat === '') {
+            $this->dispatch('toast', type: 'error', message: 'Nama obat wajib diisi.');
+            return;
+        }
+
+        $existing = $this->dataDaftarPoliRJ['anamnesa']['rekonsiliasiObat'] ?? [];
+        $isDuplicate = collect($existing)
+            ->contains(fn($i) => mb_strtolower($i['namaObat'] ?? '') === mb_strtolower($namaObat));
+
+        if ($isDuplicate) {
+            $this->dispatch('toast', type: 'warning', message: "Obat '{$namaObat}' sudah ada di daftar.");
+            return;
+        }
+
+        $existing[] = [
+            'namaObat' => $namaObat,
+            'dosis'    => $dosis,
+            'rute'     => $rute,
+        ];
+        $this->dataDaftarPoliRJ['anamnesa']['rekonsiliasiObat'] = $existing;
+
+        $this->rekonsiliasiObatInput = ['namaObat' => '', 'dosis' => '', 'rute' => ''];
+        $this->dispatch('toast', type: 'success', message: "Obat '{$namaObat}' ditambahkan.");
+    }
+
+    public function removeRekonsiliasiObat(string $namaObat): void
+    {
+        $list = collect($this->dataDaftarPoliRJ['anamnesa']['rekonsiliasiObat'] ?? [])
+            ->reject(fn($i) => ($i['namaObat'] ?? '') === $namaObat)
+            ->values()
+            ->all();
+
+        $this->dataDaftarPoliRJ['anamnesa']['rekonsiliasiObat'] = $list;
+        $this->dispatch('toast', type: 'success', message: "Obat '{$namaObat}' dihapus.");
+    }
+
     protected function resetForm(): void
     {
         $this->resetVersion();
@@ -631,6 +689,7 @@ new class extends Component {
         $this->alergiMakananOptions = [];
         $this->alergiUdaraOptions   = [];
         $this->alergiObatOptions    = [];
+        $this->rekonsiliasiObatInput = ['namaObat' => '', 'dosis' => '', 'rute' => ''];
     }
 
     public function mount()
@@ -700,6 +759,18 @@ new class extends Component {
                                             {{ $dataDaftarPoliRJ['anamnesa']['batukTab'] ?? 'Screening Batuk' }}
                                         </label>
                                     </li>
+
+                                    {{-- REKONSILIASI OBAT TAB --}}
+                                    <li class="mr-2">
+                                        <label
+                                            class="inline-block px-4 py-2 border-b-2 border-transparent rounded-t-lg cursor-pointer hover:text-gray-600 hover:border-gray-300"
+                                            :class="activeTab === '{{ $dataDaftarPoliRJ['anamnesa']['rekonsiliasiObatTab'] ?? 'Rekonsiliasi Obat' }}'
+                                                ?
+                                                'text-primary border-primary bg-gray-100' : ''"
+                                            @click="activeTab ='{{ $dataDaftarPoliRJ['anamnesa']['rekonsiliasiObatTab'] ?? 'Rekonsiliasi Obat' }}'">
+                                            {{ $dataDaftarPoliRJ['anamnesa']['rekonsiliasiObatTab'] ?? 'Rekonsiliasi Obat' }}
+                                        </label>
+                                    </li>
                                 </ul>
                             </div>
 
@@ -726,6 +797,14 @@ new class extends Component {
                                     <div class="w-full"
                                         x-show.transition.in.opacity.duration.600="activeTab === '{{ $dataDaftarPoliRJ['anamnesa']['batukTab'] ?? 'Screening Batuk' }}'">
                                         @include('pages.transaksi.rj.emr-rj.anamnesa.tabs.batuk-tab')
+                                    </div>
+                                @endif
+
+                                {{-- REKONSILIASI OBAT TAB --}}
+                                @if (isset($dataDaftarPoliRJ['anamnesa']['rekonsiliasiObatTab']))
+                                    <div class="w-full"
+                                        x-show.transition.in.opacity.duration.600="activeTab === '{{ $dataDaftarPoliRJ['anamnesa']['rekonsiliasiObatTab'] ?? 'Rekonsiliasi Obat' }}'">
+                                        @include('pages.transaksi.rj.emr-rj.anamnesa.tabs.rekonsiliasi-obat-tab')
                                     </div>
                                 @endif
                             </div>
