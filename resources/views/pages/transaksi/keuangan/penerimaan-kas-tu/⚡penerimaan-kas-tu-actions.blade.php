@@ -107,25 +107,31 @@ new class extends Component {
             'tucashkNominal.min' => 'Nominal minimal Rp 1.',
         ]);
 
-        // Cek akun kas user
-        $cekakunkas = DB::table('acmst_accounts as a')
-            ->join('acmst_kases as b', 'a.acc_id', '=', 'b.acc_id')
-            ->where('b.co', '1')
-            ->whereIn('a.acc_id', function ($q) {
-                $q->select('acc_id')->from('user_kas')->where('user_id', auth()->id());
-            })
+        // Cek akun kas tersedia (siklik: filter kas_status='1' di tkacc_accountses;
+        // tdk ada user_kas mapping)
+        $cekakunkas = DB::table('tkacc_accountses')
+            ->where('active_status', '1')
+            ->where('kas_status', '1')
             ->count();
 
         if ($cekakunkas === 0) {
-            $this->dispatch('toast', type: 'error', message: 'Akun kas Anda belum terkonfigurasi. Hubungi administrator.');
+            $this->dispatch('toast', type: 'error',
+                message: 'Belum ada akun kas aktif di master. Set akun di Master Akun → tipe Kas.');
             return;
         }
 
-        $empId = auth()->user()->emp_id ?? null;
-        if (!$empId) {
-            $this->dispatch('toast', type: 'error', message: 'EMP ID belum diisi di profil user. Hubungi administrator.');
+        // Resolve kasir_id dari auth user (USERS.myuser_code = TKMST_KASIRS.kasir_id).
+        $myuserCode = auth()->user()->myuser_code ?? null;
+        $kasirId = $myuserCode
+            ? DB::table('tkmst_kasirs')->where('kasir_id', $myuserCode)->where('active_status', '1')->value('kasir_id')
+            : null;
+        if (!$kasirId) {
+            $this->dispatch('toast', type: 'error',
+                message: 'Profil kasir anda belum terdaftar di master kasir.');
             return;
         }
+        // Tetap simpan ke variabel $empId untuk kompat dgn kode di bawah ini
+        $empId = $kasirId;
 
         // Ambil shift saat ini
         $now = Carbon::now();
@@ -305,14 +311,14 @@ new class extends Component {
                             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 {{-- Akun Penerimaan (CI) --}}
                                 <div>
-                                    <livewire:lov.akun-ci.lov-akun-ci target="akun-ci-tu" label="Akun Penerimaan (CI)" :initialAccId="$accId"
+                                    <livewire:lov.akun.lov-akun target="akun-ci-tu" label="Akun Penerimaan" :initialAccId="$accId"
                                         wire:key="lov-ci-{{ $editNo ?? 'new' }}-{{ $renderVersions['modal'] ?? 0 }}" />
                                     <x-input-error :messages="$errors->get('accId')" class="mt-1" />
                                 </div>
 
                                 {{-- Akun Kas --}}
                                 <div x-ref="lovKasWrapper">
-                                    <livewire:lov.kas.lov-kas target="akun-kas-tu" tipe="" label="Akun Kas" :initialAccId="$accIdKas"
+                                    <livewire:lov.akun.lov-akun target="akun-kas-tu" :kasOnly="true" label="Akun Kas" :initialAccId="$accIdKas"
                                         wire:key="lov-kas-{{ $editNo ?? 'new' }}-{{ $renderVersions['modal'] ?? 0 }}" />
                                     <x-input-error :messages="$errors->get('accIdKas')" class="mt-1" />
                                 </div>

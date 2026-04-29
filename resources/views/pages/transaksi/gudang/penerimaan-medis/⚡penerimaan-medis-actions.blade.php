@@ -51,8 +51,8 @@ new class extends Component {
     public int $sisa = 0;
 
     // ── Cara Bayar (akun kas keluar) ──
-    public ?string $accId = null;
-    public ?string $accName = null;
+    public ?string $cbId = null;
+    public ?string $cbDesc = null;
 
     public function mount(): void
     {
@@ -100,7 +100,7 @@ new class extends Component {
         $this->rcvPpnStatus = (string) ($hdr->rcv_ppn_status ?? '1');
         $this->rcvMaterai = (int) ($hdr->rcv_materai ?? 0);
         $this->bayar = (int) ($hdr->rcv_bayar ?? 0);
-        $this->accId = $hdr->acc_id ?? null;
+        $this->cbId = $hdr->cb_id ?? null;
         $this->rcvStatus = (string) ($hdr->rcv_status ?? '');
 
         $this->loadDetailsFromDb();
@@ -131,12 +131,12 @@ new class extends Component {
         $this->dispatch('focus-entry-qty');
     }
 
-    #[On('lov.selected.akun-co-rcv')]
-    public function onAkunCoSelected(string $target, ?array $payload): void
+    #[On('lov.selected.cb-rcv')]
+    public function onCaraBayarSelected(string $target, ?array $payload): void
     {
-        $this->accId = $payload['acc_id'] ?? null;
-        $this->accName = $payload['acc_name'] ?? null;
-        $this->resetErrorBag('accId');
+        $this->cbId = $payload['cb_id'] ?? null;
+        $this->cbDesc = $payload['cb_desc'] ?? null;
+        $this->resetErrorBag('cbId');
     }
 
     /* ══════════════════════════════
@@ -458,8 +458,8 @@ new class extends Component {
             return;
         }
 
-        if (!$this->accId) {
-            $this->addError('accId', 'Cara bayar wajib dipilih.');
+        if (!$this->cbId) {
+            $this->addError('cbId', 'Cara bayar wajib dipilih.');
             $this->dispatch('toast', type: 'error', message: 'Cara bayar wajib dipilih.');
             return;
         }
@@ -514,7 +514,7 @@ new class extends Component {
                         'rcv_bayar' => $bayar,
                         'rcv_status' => $rcvStatus,
                         'pay_date' => $payDateRaw,
-                        'acc_id' => $this->accId,
+                        'cb_id' => $this->cbId,
                     ]);
 
                     // Insert all details
@@ -551,7 +551,7 @@ new class extends Component {
                             'rcv_bayar' => $bayar,
                             'rcv_status' => $rcvStatus,
                             'pay_date' => $payDateRaw,
-                            'acc_id' => $this->accId,
+                            'cb_id' => $this->cbId,
                         ]);
 
                     // Delete old details & re-insert
@@ -589,7 +589,7 @@ new class extends Component {
 
                     DB::table('imtxn_cashouthdrs')->insert([
                         'shift' => $shift,
-                        'acc_id' => $this->accId,
+                        'cb_id' => $this->cbId,
                         'cashout_no' => $cashoutNo,
                         'cashout_date' => DB::raw("to_date('{$this->rcvDate}','dd/mm/yyyy hh24:mi:ss')"),
                         'cashout_desc' => $desc,
@@ -751,8 +751,8 @@ new class extends Component {
         }
         // Reset input pembayaran — biar saat buka modal bayar selalu mulai dari 0
         // (mis. kasus edit transaksi yang punya rcv_bayar lama tidak auto-fill ke field).
-        $this->reset(['rcvDiskon', 'rcvPpn', 'rcvMaterai', 'bayar', 'accId', 'accName']);
-        $this->resetErrorBag('accId');
+        $this->reset(['rcvDiskon', 'rcvPpn', 'rcvMaterai', 'bayar', 'cbId', 'cbDesc']);
+        $this->resetErrorBag('cbId');
 
         // Auto-fill PPN dari RSMST_IDENTITASES (port Oracle Forms):
         //   AUTO_PPN_STATUS = '0' → PPN 0%, selain itu → ambil PPN_VALUE master.
@@ -770,8 +770,8 @@ new class extends Component {
     public function closeBayar(): void
     {
         // Reset semua input pembayaran ke default 0 / null — biar tampilan bersih saat reopen.
-        $this->reset(['rcvDiskon', 'rcvPpn', 'rcvMaterai', 'bayar', 'accId', 'accName']);
-        $this->resetErrorBag('accId');
+        $this->reset(['rcvDiskon', 'rcvPpn', 'rcvMaterai', 'bayar', 'cbId', 'cbDesc']);
+        $this->resetErrorBag('cbId');
         $this->hitungSemua();
         // Bump versi area 'bayar' supaya LOV akun-co remount (state bersih) tanpa
         // ganggu LOV lain di main modal.
@@ -794,7 +794,7 @@ new class extends Component {
 
     protected function resetFormFields(): void
     {
-        $this->reset(['rcvNo', 'rcvDate', 'suppId', 'suppName', 'rcvDesc', 'spNo', 'rcvStatus', 'entryProductId', 'entryProductName', 'entryQty', 'entryCostPrice', 'entryDiscount1', 'entryDiscount2', 'entryRcvBath', 'entryRcvEd', 'details', 'totalBarang', 'totalQty', 'rcvDiskon', 'totalSetelahDiskon', 'rcvPpn', 'rcvPpnStatus', 'ppnNominal', 'rcvMaterai', 'grandTotal', 'bayar', 'sisa', 'pendingPriceUpdate', 'accId', 'accName']);
+        $this->reset(['rcvNo', 'rcvDate', 'suppId', 'suppName', 'rcvDesc', 'spNo', 'rcvStatus', 'entryProductId', 'entryProductName', 'entryQty', 'entryCostPrice', 'entryDiscount1', 'entryDiscount2', 'entryRcvBath', 'entryRcvEd', 'details', 'totalBarang', 'totalQty', 'rcvDiskon', 'totalSetelahDiskon', 'rcvPpn', 'rcvPpnStatus', 'ppnNominal', 'rcvMaterai', 'grandTotal', 'bayar', 'sisa', 'pendingPriceUpdate', 'cbId', 'cbDesc']);
         $this->detailCounter = 0;
         $this->resetValidation();
     }
@@ -1158,10 +1158,10 @@ new class extends Component {
                                         class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $rcvStatus === 'L' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200' }}">
                                         {{ $rcvStatus === 'L' ? 'LUNAS' : 'HUTANG' }}
                                     </span>
-                                    @if ($accName || $accId)
+                                    @if ($cbDesc || $cbId)
                                         <span class="text-xs text-gray-500 dark:text-gray-400">
                                             via <strong
-                                                class="text-gray-700 dark:text-gray-200">{{ $accName ?: $accId }}</strong>
+                                                class="text-gray-700 dark:text-gray-200">{{ $cbDesc ?: $cbId }}</strong>
                                         </span>
                                     @endif
                                 </div>
@@ -1276,10 +1276,10 @@ new class extends Component {
                     {{-- Kiri: input --}}
                     <div class="space-y-3">
                         <div>
-                            <livewire:lov.akun-co.lov-akun-co target="akun-co-rcv" label="Cara Bayar (Akun Kas)"
-                                :initialAccId="$accId"
-                                wire:key="lov-akun-co-{{ $rcvNo ?? 'new' }}-{{ $renderVersions['bayar'] ?? 0 }}" />
-                            <x-input-error :messages="$errors->get('accId')" class="mt-1" />
+                            <livewire:lov.cara-bayar.lov-cara-bayar target="cb-rcv" label="Cara Bayar"
+                                :initialCbId="$cbId"
+                                wire:key="lov-cb-rcv-{{ $rcvNo ?? 'new' }}-{{ $renderVersions['bayar'] ?? 0 }}" />
+                            <x-input-error :messages="$errors->get('cbId')" class="mt-1" />
                         </div>
                         <div class="flex items-center gap-3">
                             <x-input-label value="Diskon (Rp)" class="w-32 shrink-0" />

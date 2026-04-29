@@ -94,7 +94,9 @@ new class extends Component {
         foreach ($users as $user) {
             $user->role_list = DB::table('model_has_roles')->join('roles', 'roles.id', '=', 'model_has_roles.role_id')->where('model_has_roles.model_id', $user->id)->pluck('roles.name')->all();
 
-            $user->kas_count = DB::table('user_kas')->where('user_id', $user->id)->count();
+            // Siklik: tabel user_kas tidak ada (sirus-only). Kas mapping per-user
+            // dihapus. Field tetap ada untuk kompatibilitas template (auto = 0).
+            $user->kas_count = 0;
         }
 
         return $users;

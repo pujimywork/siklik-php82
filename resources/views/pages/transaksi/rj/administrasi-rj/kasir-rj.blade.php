@@ -24,9 +24,9 @@ new class extends Component {
     public int $sudahBayar = 0;
     public int $rjSisa = 0;
 
-    // ── Input Kasir ──
-    public ?string $accId = null;
-    public ?string $accName = null;
+    // ── Input Kasir (siklik: cara bayar dari TKACC_CARABAYARS) ──
+    public ?string $cbId = null;     // cb_id (FK ke tkacc_carabayars)
+    public ?string $cbDesc = null;   // display deskripsi cara bayar
     public ?int $bayar = null;
     public int $kembalian = 0;
 
@@ -74,7 +74,7 @@ new class extends Component {
             return;
         }
 
-        $hdr = DB::table('rstxn_rjhdrs')->select('rj_status', 'txn_status', 'rj_diskon', 'acc_id')->where('rj_no', $rjNo)->first();
+        $hdr = DB::table('rstxn_rjhdrs')->select('rj_status', 'txn_status', 'rj_diskon', 'cb_id')->where('rj_no', $rjNo)->first();
 
         if (!$hdr) {
             $this->dispatch('toast', type: 'error', message: 'Data transaksi tidak ditemukan.');
@@ -88,9 +88,9 @@ new class extends Component {
         $this->txnStatus = $hdr->rj_status;
         $this->rjDiskon = (int) ($hdr->rj_diskon ?? 0);
 
-        if ($hdr->acc_id) {
-            $this->accId = $hdr->acc_id;
-            $this->accName = DB::table('acmst_accounts')->where('acc_id', $hdr->acc_id)->value('acc_name') ?? $hdr->acc_id;
+        if ($hdr->cb_id) {
+            $this->cbId = $hdr->cb_id;
+            $this->cbDesc = DB::table('tkacc_carabayars')->where('cb_id', $hdr->cb_id)->value('cb_desc') ?? $hdr->cb_id;
         }
 
         $this->hitungTotal();
@@ -151,7 +151,7 @@ new class extends Component {
     protected function rules(): array
     {
         return [
-            'accId' => ['required', 'string'],
+            'cbId' => ['required', 'string', 'exists:tkacc_carabayars,cb_id'],
             'bayar' => ['required', 'integer', 'min:1'],
             'rjDiskon' => ['nullable', 'integer', 'min:0'],
         ];
@@ -160,21 +160,22 @@ new class extends Component {
     protected function messages(): array
     {
         return [
-            'accId.required' => 'Akun kas belum dipilih.',
+            'cbId.required' => 'Cara bayar belum dipilih.',
+            'cbId.exists'   => 'Cara bayar tidak valid.',
             'bayar.required' => 'Kolom Bayar masih kosong.',
             'bayar.min' => 'Nominal bayar harus lebih dari 0.',
         ];
     }
 
     /* ===============================
-     | LOV KAS
+     | LOV CARA BAYAR
      =============================== */
-    #[On('lov.selected.kas-kasir-rj')]
-    public function onKasSelected(string $target, ?array $payload): void
+    #[On('lov.selected.cb-kasir-rj')]
+    public function onCbSelected(string $target, ?array $payload): void
     {
-        $this->accId = $payload['acc_id'] ?? null;
-        $this->accName = $payload['acc_name'] ?? null;
-        $this->resetErrorBag('accId');
+        $this->cbId = $payload['cb_id'] ?? null;
+        $this->cbDesc = $payload['cb_desc'] ?? null;
+        $this->resetErrorBag('cbId');
         $this->dispatch('focus-input-bayar');
     }
 
@@ -189,36 +190,30 @@ new class extends Component {
             return;
         }
 
-        // 2. Cek akun kas user — pakai user_kas (bukan smmst_kases)
-        $cekAkunKas = DB::table('user_kas')
-            ->where('user_id', auth()->id())
-            ->count();
-
-        if ($cekAkunKas === 0) {
-            $this->dispatch('toast', type: 'error', message: 'Akun kas anda belum terkonfigurasi. Hubungi administrator.');
-            return;
-        }
-
-        // 3. Cek status RJ sebelum lock
+        // 2. Cek status RJ sebelum lock
         if ($this->checkRJStatus($this->rjNo)) {
             $this->dispatch('toast', type: 'info', message: 'Data sudah diproses.');
             return;
         }
 
-        // 4. Validasi form
+        // 3. Validasi form
         $this->validate();
 
-        // 5. Cek lab pending
+        // 4. Cek lab pending
         if ($this->checkLabPending($this->rjNo, 'RJ')) {
             $this->dispatch('toast', type: 'error', message: 'Hasil Lab belum selesai, pembayaran tidak bisa diproses.');
             return;
         }
 
-        // 6. Ambil emp_id dari users — tidak perlu query smmst_users lagi
-        $empId = auth()->user()->emp_id;
+        // 5. Resolve kasir_id dari auth user (USERS.myuser_code = TKMST_KASIRS.kasir_id).
+        $myuserCode = auth()->user()->myuser_code ?? null;
+        $kasirId = $myuserCode
+            ? DB::table('tkmst_kasirs')->where('kasir_id', $myuserCode)->where('active_status', '1')->value('kasir_id')
+            : null;
 
-        if (!$empId) {
-            $this->dispatch('toast', type: 'error', message: 'EMP ID belum diisi di profil user. Hubungi administrator.');
+        if (!$kasirId) {
+            $this->dispatch('toast', type: 'error',
+                message: 'Profil kasir anda belum terdaftar di master kasir. Hubungi administrator.');
             return;
         }
 
@@ -227,7 +222,7 @@ new class extends Component {
         $newTxnStatus = null;
 
         try {
-            DB::transaction(function () use ($bayar, $dspTotalAll, $empId, &$newTxnStatus) {
+            DB::transaction(function () use ($bayar, $dspTotalAll, $kasirId, &$newTxnStatus) {
                 // Lock row
                 $this->lockRJRow($this->rjNo);
 
@@ -238,14 +233,16 @@ new class extends Component {
 
                 $rjHdr = DB::table('rstxn_rjhdrs')->where('rj_no', $this->rjNo)->first();
 
+                // RSTXN_RJCASHINS schema: rjc_dtl, rj_no, rjc_date, rjc_nominal, rjc_desc,
+                //                          cb_id, kasir_id, shift, g_status.
                 $cashRow = [
-                    'acc_id' => $this->accId,
-                    'rjc_dtl' => DB::raw('rjcdtl_seq.nextval'),
+                    'rjc_dtl'  => DB::raw('rjcdtl_seq.nextval'),
                     'rjc_date' => $rjHdr->rj_date,
                     'rjc_desc' => $rjHdr->reg_no . ' / ' . $rjHdr->rj_no,
-                    'emp_id' => $empId,
-                    'rj_no' => $this->rjNo,
-                    'shift' => $rjHdr->shift,
+                    'cb_id'    => $this->cbId,
+                    'kasir_id' => $kasirId,
+                    'rj_no'    => $this->rjNo,
+                    'shift'    => $rjHdr->shift,
                 ];
 
                 if ($bayar < $dspTotalAll) {
@@ -255,11 +252,11 @@ new class extends Component {
                         ->where('rj_no', $this->rjNo)
                         ->update([
                             'txn_status' => 'H',
-                            'pay_date' => null,
-                            'acc_id' => $this->accId,
-                            'rj_diskon' => $this->rjDiskon,
-                            'rj_status' => 'L',
-                            'emp_id' => $empId,
+                            'pay_date'   => null,
+                            'cb_id'      => $this->cbId,
+                            'rj_diskon'  => $this->rjDiskon,
+                            'rj_status'  => 'L',
+                            'kasir_id'   => $kasirId,
                         ]);
                     $newTxnStatus = 'H';
                 } else {
@@ -271,11 +268,11 @@ new class extends Component {
                         ->where('rj_no', $this->rjNo)
                         ->update([
                             'txn_status' => 'L',
-                            'pay_date' => $rjHdr->rj_date,
-                            'acc_id' => $this->accId,
-                            'rj_diskon' => $this->rjDiskon,
-                            'rj_status' => 'L',
-                            'emp_id' => $empId,
+                            'pay_date'   => $rjHdr->rj_date,
+                            'cb_id'      => $this->cbId,
+                            'rj_diskon'  => $this->rjDiskon,
+                            'rj_status'  => 'L',
+                            'kasir_id'   => $kasirId,
                         ]);
                     $newTxnStatus = 'L';
 
@@ -340,11 +337,11 @@ new class extends Component {
                     ->where('rj_no', $this->rjNo)
                     ->update([
                         'txn_status' => 'A',
-                        'pay_date' => null,
-                        'acc_id' => null,
-                        'rj_diskon' => 0,
-                        'rj_status' => 'A',
-                        'emp_id' => null,
+                        'pay_date'   => null,
+                        'cb_id'      => null,
+                        'rj_diskon'  => 0,
+                        'rj_status'  => 'A',
+                        'kasir_id'   => null,
                     ]);
 
                 if ($hdr->reg_no) {
@@ -356,8 +353,8 @@ new class extends Component {
 
             $this->txnStatus = null;
             $this->rjDiskon = 0;
-            $this->accId = null;
-            $this->accName = null;
+            $this->cbId = null;
+            $this->cbDesc = null;
             $this->bayar = null;
             $this->kembalian = 0;
             $this->isFormLocked = false;
@@ -622,7 +619,7 @@ new class extends Component {
      =============================== */
     private function resetKasir(): void
     {
-        $this->reset(['rjNo', 'dataDaftarPoliRJ', 'bayar', 'accId', 'accName', 'txnStatus']);
+        $this->reset(['rjNo', 'dataDaftarPoliRJ', 'bayar', 'cbId', 'cbDesc', 'txnStatus']);
         $this->resetVersion();
         $this->isFormLocked = false;
         $this->rjTotal = 0;
@@ -678,7 +675,7 @@ new class extends Component {
                             dark:text-amber-300 focus:ring-0 focus:outline-none
                             [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none
                             [&::-webkit-inner-spin-button]:appearance-none"
-                        placeholder="0" x-on:keyup.enter="$dispatch('focus-lov-kas-kasir-rj')" />
+                        placeholder="0" x-on:keyup.enter="$dispatch('focus-lov-cb-kasir-rj')" />
                     <x-input-error :messages="$errors->get('rjDiskon')" class="mt-1" />
                 @else
                     <p class="text-base font-bold text-amber-700 dark:text-amber-300">Rp {{ number_format($rjDiskon) }}
@@ -822,10 +819,10 @@ new class extends Component {
 
                 {{-- LOV Akun Kas — tipe="rj" agar hanya tampil kas yang aktif untuk RJ --}}
                 <div class="w-80"
-                    x-on:focus-lov-kas-kasir-rj.window="$nextTick(() => $el.querySelector('input')?.focus())">
-                    <livewire:lov.kas.lov-kas target="kas-kasir-rj" tipe="rj" label="Akun Kas" :initialAccId="$accId"
-                        wire:key="lov-kas-kasir-rj-{{ $rjNo }}-{{ $renderVersions['kasir-rj'] ?? 0 }}" />
-                    <x-input-error :messages="$errors->get('accId')" class="mt-1" />
+                    x-on:focus-lov-cb-kasir-rj.window="$nextTick(() => $el.querySelector('input')?.focus())">
+                    <livewire:lov.cara-bayar.lov-cara-bayar target="cb-kasir-rj" label="Cara Bayar" :initialCbId="$cbId"
+                        wire:key="lov-cb-kasir-rj-{{ $rjNo }}-{{ $renderVersions['kasir-rj'] ?? 0 }}" />
+                    <x-input-error :messages="$errors->get('cbId')" class="mt-1" />
                 </div>
 
                 {{-- Input Bayar --}}
@@ -923,7 +920,7 @@ new class extends Component {
                                 {{ Carbon::parse($cash->rjc_date)->format('d/m/Y') }}
                             </td>
                             <td class="px-4 py-3 font-mono text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                                {{ $cash->acc_id }}
+                                {{ $cash->cb_id ?? '—' }}
                             </td>
                             <td class="px-4 py-3 text-gray-800 dark:text-gray-200">{{ $cash->rjc_desc }}</td>
                             <td

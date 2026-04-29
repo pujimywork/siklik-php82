@@ -45,9 +45,22 @@ new class extends Component {
         $this->resetPage();
     }
 
-    /* ── Query ── */
+    /* ── Query ──
+     * NOTE: page ini sebelumnya query rstxn_tucashks + acmst_accounts +
+     * immst_employers — semua nggak ada di siklik. Skema asli siklik:
+     * TKTXN_TUCASHINS (ci_no, ci_date, ci_desc, ci_nominal, ci_status,
+     * tucico_id, kasir_id, cb_id). Refactor full belum dilakukan.
+     * Sementara return empty supaya page tidak crash. TODO: rewrite
+     * semua field name + actions modal pakai TKTXN_TUCASHINS columns.
+     */
     #[Computed]
     public function baseQuery()
+    {
+        return DB::table('tktxn_tucashins')->whereRaw('1=0');
+    }
+
+    /* ── Legacy query (broken — preserved untuk referensi refactor) ── */
+    private function _legacyQuery()
     {
         $query = DB::table('rstxn_tucashks as a')
             ->leftJoin('acmst_accounts as b', 'a.acc_id', '=', 'b.acc_id')

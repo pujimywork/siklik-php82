@@ -65,80 +65,33 @@ new class extends Component {
         $this->loadAvailableKas();
     }
 
+    /*
+     * NOTE (siklik): Tabel `user_kas` (mapping user→akun kas) hanya ada di
+     * sirus, tidak ada di siklik. Untuk klinik pratama, semua user yg
+     * berhak (admin/kasir/dokter) langsung pakai cara bayar dari
+     * tkacc_carabayars. Method-method di bawah ini distub agar fitur
+     * lama tdk crash, tapi tdk lagi melakukan apa-apa.
+     */
     protected function loadUserKas(): void
     {
-        $this->userKasIds = DB::table('user_kas')->where('user_id', $this->userId)->pluck('acc_id')->map(fn($v) => (string) $v)->all();
+        $this->userKasIds = [];
     }
 
     protected function loadAvailableKas(): void
     {
-        $keyword = trim($this->searchKas);
-        $upperKeyword = mb_strtoupper($keyword);
-
-        $rows = DB::table('acmst_accounts as a')
-            ->join('acmst_kases as b', 'a.acc_id', '=', 'b.acc_id')
-            ->select('a.acc_id', 'a.acc_name', 'b.rj', 'b.ugd', 'b.ri')
-            ->when($this->filterTipe !== '', fn($q) => $q->where('b.' . $this->filterTipe, '1'))
-            ->when($keyword !== '', fn($q) => $q->where(fn($q2) => $q2->where('a.acc_id', 'like', "%{$keyword}%")->orWhereRaw('UPPER(a.acc_name) LIKE ?', ["%{$upperKeyword}%"])))
-            ->orderBy('a.acc_id')
-            ->get();
-
-        $this->availableKas = $rows
-            ->map(
-                fn($row) => [
-                    'acc_id' => (string) $row->acc_id,
-                    'acc_name' => (string) ($row->acc_name ?? ''),
-                    'tipe_rj' => ($row->rj ?? '') === '1',
-                    'tipe_ugd' => ($row->ugd ?? '') === '1',
-                    'tipe_ri' => ($row->ri ?? '') === '1',
-                    'assigned' => in_array((string) $row->acc_id, $this->userKasIds),
-                ],
-            )
-            ->toArray();
+        $this->availableKas = [];
     }
 
     public function toggleKas(string $accId): void
     {
-        if (!$this->userId) {
-            return;
-        }
-
-        $exists = DB::table('user_kas')->where('user_id', $this->userId)->where('acc_id', $accId)->exists();
-
-        if ($exists) {
-            DB::table('user_kas')->where('user_id', $this->userId)->where('acc_id', $accId)->delete();
-
-            $this->dispatch('toast', type: 'info', message: "Kas {$accId} dicabut.");
-        } else {
-            DB::table('user_kas')->insert([
-                'id_user_kas' => DB::raw('(SELECT NVL(MAX(id_user_kas), 0) + 1 FROM user_kas)'),
-                'user_id' => $this->userId,
-                'acc_id' => $accId,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            $this->dispatch('toast', type: 'success', message: "Kas {$accId} diberikan.");
-        }
-
-        $this->loadUserKas();
-        $this->loadAvailableKas();
-        $this->dispatch('refresh-after-user-control.saved');
+        $this->dispatch('toast', type: 'info',
+            message: 'Fitur kas-mapping per-user tidak tersedia di siklik. Pakai master Cara Bayar.');
     }
 
     public function revokeAll(): void
     {
-        if (!$this->userId) {
-            return;
-        }
-
-        DB::table('user_kas')->where('user_id', $this->userId)->delete();
-
-        $this->userKasIds = [];
-        $this->loadAvailableKas();
-
-        $this->dispatch('toast', type: 'warning', message: "Semua kas {$this->userName} dicabut.");
-        $this->dispatch('refresh-after-user-control.saved');
+        $this->dispatch('toast', type: 'info',
+            message: 'Fitur kas-mapping per-user tidak tersedia di siklik.');
     }
 
     public function closeModal(): void

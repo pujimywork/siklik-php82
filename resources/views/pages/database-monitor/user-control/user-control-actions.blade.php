@@ -240,7 +240,7 @@ new class extends Component {
                 if ($user && $user->myuser_ttd_image) {
                     \Storage::disk('public')->delete($user->myuser_ttd_image);
                 }
-                DB::table('user_kas')->where('user_id', $this->userId)->delete();
+                // Siklik tdk punya user_kas (sirus-only) — skip cascade.
                 DB::table('users')->where('id', $this->userId)->delete();
             });
 

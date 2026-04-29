@@ -45,9 +45,21 @@ new class extends Component {
         $this->resetPage();
     }
 
-    /* ── Query ── */
+    /* ── Query ──
+     * NOTE: tabel rstxn_tucashds + acmst_accounts + immst_employers
+     * nggak ada di siklik. Schema asli: TKTXN_TUCASHOUTS (co_no, co_date,
+     * co_desc, co_nominal, co_status, tucico_id, kasir_id, cb_id).
+     * Stub return empty supaya page tidak crash. TODO: rewrite columns
+     * + actions modal mengikuti TKTXN_TUCASHOUTS.
+     */
     #[Computed]
     public function baseQuery()
+    {
+        return DB::table('tktxn_tucashouts')->whereRaw('1=0');
+    }
+
+    /* ── Legacy query (broken — preserved untuk referensi) ── */
+    private function _legacyQuery()
     {
         $query = DB::table('rstxn_tucashds as a')
             ->leftJoin('acmst_accounts as b', 'a.acc_id', '=', 'b.acc_id')
