@@ -6,10 +6,11 @@ use App\Http\Traits\WithRenderVersioning\WithRenderVersioningTrait;
 use App\Http\Traits\WithValidationToast\WithValidationToastTrait;
 use Illuminate\Support\Facades\DB;
 use App\Http\Traits\Master\MasterPasien\MasterPasienTrait;
+use App\Http\Traits\BPJS\PcareTrait;
 use Livewire\Attributes\On;
 
 new class extends Component {
-    use EmrRJTrait, MasterPasienTrait, WithRenderVersioningTrait, WithValidationToastTrait;
+    use EmrRJTrait, MasterPasienTrait, PcareTrait, WithRenderVersioningTrait, WithValidationToastTrait;
 
     public bool $isFormLocked = false;
     public ?int $rjNo = null;
@@ -18,6 +19,13 @@ new class extends Component {
     // renderVersions
     public array $renderVersions = [];
     protected array $renderAreas = ['modal-anamnesa-rj'];
+
+    /* -------------------------
+     | LOV alergi BPJS PCare (jenis: 01=Makanan, 02=Udara, 03=Obat)
+     * ------------------------- */
+    public array $alergiMakananOptions = [];
+    public array $alergiUdaraOptions   = [];
+    public array $alergiObatOptions    = [];
 
     /* ===============================
      | OPEN REKAM MEDIS PERAWAT - ANAMNESA
@@ -114,6 +122,13 @@ new class extends Component {
                 'snomedCode' => '',
                 'snomedDisplayEn' => '',
                 'snomedDisplayId' => '',
+                // BPJS PCare alergi (jenis 01/02/03) — default 00 = Tidak Ada
+                'alergiMakan'      => '00',
+                'alergiMakanDesc'  => 'Tidak Ada',
+                'alergiUdara'      => '00',
+                'alergiUdaraDesc'  => 'Tidak Ada',
+                'alergiObat'       => '00',
+                'alergiObatDesc'   => 'Tidak Ada',
             ],
 
             // 'rekonsiliasiObatTab' => 'Rekonsiliasi Obat',
@@ -454,10 +469,84 @@ new class extends Component {
         $this->dataDaftarPoliRJ['anamnesa']['alergi']['snomedDisplayId'] = '';
     }
 
+    /* ===============================
+     | LOV Alergi BPJS PCare — Makanan/Udara/Obat
+     |
+     | jenis: 01=Makanan, 02=Udara, 03=Obat (sesuai BPJS PCare).
+     | UI: tombol "Cari BPJS" → loadAlergi(jenis) → muncul dropdown
+     |     → selectAlergi(jenis, kdAlergi, nmAlergi) → set anamnesa.
+     =============================== */
+    public function loadAlergiMakanan(): void { $this->loadAlergi('01'); }
+    public function loadAlergiUdara(): void   { $this->loadAlergi('02'); }
+    public function loadAlergiObat(): void    { $this->loadAlergi('03'); }
+
+    private function loadAlergi(string $jenis): void
+    {
+        try {
+            $resp = $this->getAlergi($jenis)->getOriginalContent();
+            $code = $resp['metadata']['code'] ?? 0;
+
+            if ($code != 200) {
+                $msg = $resp['metadata']['message'] ?? "code {$code}";
+                $this->dispatch('toast', type: 'error',
+                    message: 'BPJS getAlergi: ' . $msg, title: 'BPJS');
+                return;
+            }
+
+            $list = $resp['response']['list'] ?? $resp['response'] ?? [];
+            $opts = collect($list)
+                ->map(fn($r) => [
+                    'kdAlergi' => (string) ($r['kdAlergi'] ?? $r['kode'] ?? ''),
+                    'nmAlergi' => (string) ($r['nmAlergi'] ?? $r['nama'] ?? ''),
+                ])
+                ->filter(fn($o) => $o['kdAlergi'] !== '')
+                ->values()
+                ->all();
+
+            // Tambahin opsi "Tidak Ada" di paling atas (siklik-lite default)
+            array_unshift($opts, ['kdAlergi' => '00', 'nmAlergi' => 'Tidak Ada']);
+
+            match ($jenis) {
+                '01' => $this->alergiMakananOptions = $opts,
+                '02' => $this->alergiUdaraOptions   = $opts,
+                '03' => $this->alergiObatOptions    = $opts,
+            };
+        } catch (\Exception $e) {
+            \Log::error('PCare getAlergi exception', ['jenis' => $jenis, 'error' => $e->getMessage()]);
+            $this->dispatch('toast', type: 'error',
+                message: 'Error PCare: ' . $e->getMessage(), title: 'BPJS');
+        }
+    }
+
+    public function selectAlergi(string $jenis, string $kdAlergi, string $nmAlergi): void
+    {
+        $field = match ($jenis) {
+            '01' => ['alergiMakan',  'alergiMakanDesc'],
+            '02' => ['alergiUdara',  'alergiUdaraDesc'],
+            '03' => ['alergiObat',   'alergiObatDesc'],
+            default => null,
+        };
+        if (!$field) return;
+
+        [$kdField, $descField] = $field;
+        $this->dataDaftarPoliRJ['anamnesa']['alergi'][$kdField]   = $kdAlergi;
+        $this->dataDaftarPoliRJ['anamnesa']['alergi'][$descField] = $nmAlergi;
+
+        // Tutup dropdown opsi
+        match ($jenis) {
+            '01' => $this->alergiMakananOptions = [],
+            '02' => $this->alergiUdaraOptions   = [],
+            '03' => $this->alergiObatOptions    = [],
+        };
+    }
+
     protected function resetForm(): void
     {
         $this->resetVersion();
         $this->isFormLocked = false;
+        $this->alergiMakananOptions = [];
+        $this->alergiUdaraOptions   = [];
+        $this->alergiObatOptions    = [];
     }
 
     public function mount()
