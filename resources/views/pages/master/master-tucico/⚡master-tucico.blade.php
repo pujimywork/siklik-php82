@@ -133,22 +133,18 @@ new class extends Component {
                                             <span class="italic text-gray-400">— belum dipetakan —</span>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3 text-center">
-                                        @if ((string) $row->active_status === '1')
-                                            <span class="px-2 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-800">Aktif</span>
-                                        @else
-                                            <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">Non-aktif</span>
-                                        @endif
+                                    <td class="px-4 py-3">
+                                        <x-toggle :current="(string) $row->active_status"
+                                            trueValue="1" falseValue="0"
+                                            wireClick="toggleActive('{{ $row->tucico_id }}')">
+                                            {{ (string) $row->active_status === '1' ? 'Aktif' : 'Non-aktif' }}
+                                        </x-toggle>
                                     </td>
                                     <td class="px-4 py-3">
                                         <div class="flex flex-wrap gap-2">
                                             <x-secondary-button type="button"
                                                 wire:click="openEdit('{{ $row->tucico_id }}')" class="px-2 py-1 text-xs">
                                                 Edit
-                                            </x-secondary-button>
-                                            <x-secondary-button type="button"
-                                                wire:click="toggleActive('{{ $row->tucico_id }}')" class="px-2 py-1 text-xs">
-                                                {{ (string) $row->active_status === '1' ? 'Non-aktifkan' : 'Aktifkan' }}
                                             </x-secondary-button>
                                             <x-confirm-button variant="danger"
                                                 :action="'requestDelete(\'' . $row->tucico_id . '\')'"

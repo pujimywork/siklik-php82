@@ -222,10 +222,11 @@ new class extends Component {
                             </div>
                             <div>
                                 <x-input-label value="Status Aktif" :required="true" />
-                                <x-select-input wire:model.live="form.active_status" class="w-full mt-1">
-                                    <option value="1">Aktif</option>
-                                    <option value="0">Non-aktif</option>
-                                </x-select-input>
+                                <div class="mt-2">
+                                    <x-toggle wire:model.live="form.active_status" trueValue="1" falseValue="0">
+                                        {{ ($form['active_status'] ?? '0') === '1' ? 'Aktif' : 'Non-aktif' }}
+                                    </x-toggle>
+                                </div>
                             </div>
                         </div>
                     </div>
