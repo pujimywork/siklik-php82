@@ -29,14 +29,14 @@ new class extends Component {
         $this->dispatch('pengeluaran-kas.openCreate');
     }
 
-    public function openEdit(string $tucashkNo): void
+    public function openEdit(string $coNo): void
     {
-        $this->dispatch('pengeluaran-kas.openEdit', tucashkNo: $tucashkNo);
+        $this->dispatch('pengeluaran-kas.openEdit', coNo: $coNo);
     }
 
-    public function requestDelete(string $tucashkNo): void
+    public function requestDelete(string $coNo): void
     {
-        $this->dispatch('pengeluaran-kas.requestDelete', tucashkNo: $tucashkNo);
+        $this->dispatch('pengeluaran-kas.requestDelete', coNo: $coNo);
     }
 
     #[On('pengeluaran-kas.saved')]
@@ -45,51 +45,39 @@ new class extends Component {
         $this->resetPage();
     }
 
-    /* ── Query ──
-     * NOTE: tabel rstxn_tucashds + acmst_accounts + immst_employers
-     * nggak ada di siklik. Schema asli: TKTXN_TUCASHOUTS (co_no, co_date,
-     * co_desc, co_nominal, co_status, tucico_id, kasir_id, cb_id).
-     * Stub return empty supaya page tidak crash. TODO: rewrite columns
-     * + actions modal mengikuti TKTXN_TUCASHOUTS.
-     */
+    /* ── Query — Pengeluaran Kas TU = TKTXN_TUCASHOUTS ── */
     #[Computed]
     public function baseQuery()
     {
-        return DB::table('tktxn_tucashouts')->whereRaw('1=0');
-    }
-
-    /* ── Legacy query (broken — preserved untuk referensi) ── */
-    private function _legacyQuery()
-    {
-        $query = DB::table('rstxn_tucashds as a')
-            ->leftJoin('acmst_accounts as b', 'a.acc_id', '=', 'b.acc_id')
-            ->leftJoin('acmst_accounts as c', 'a.acc_id_kas', '=', 'c.acc_id')
-            ->leftJoin('immst_employers as d', 'a.emp_id', '=', 'd.emp_id')
+        $query = DB::table('tktxn_tucashouts as a')
+            ->leftJoin('tkacc_tucicos as t', 'a.tucico_id', '=', 't.tucico_id')
+            ->leftJoin('tkmst_kasirs as k', 'a.kasir_id', '=', 'k.kasir_id')
+            ->leftJoin('tkacc_carabayars as cb', 'a.cb_id', '=', 'cb.cb_id')
             ->select([
-                'a.tucashk_no',
-                DB::raw("to_char(a.tucashk_date,'dd/mm/yyyy hh24:mi:ss') as tucashk_date_display"),
-                'a.shift',
-                'a.tucashk_desc',
-                'a.tucashk_nominal',
-                'a.acc_id', 'b.acc_name',
-                'a.acc_id_kas', 'c.acc_name as acc_name_kas',
-                'a.emp_id', 'd.emp_name',
-                'a.tucashk_status',
+                'a.co_no',
+                DB::raw("to_char(a.co_date,'dd/mm/yyyy hh24:mi:ss') as co_date_display"),
+                'a.co_desc',
+                'a.co_nominal',
+                'a.co_status',
+                'a.tucico_id', 't.tucico_desc',
+                'a.kasir_id', 'k.kasir_name',
+                'a.cb_id', 'cb.cb_desc',
             ])
-            ->orderByDesc('a.tucashk_date')
-            ->orderByDesc('a.shift');
+            ->orderByDesc('a.co_date')
+            ->orderByDesc('a.co_no');
 
         if ($this->searchKeyword !== '') {
             $upper = strtoupper($this->searchKeyword);
             $query->where(function ($q) use ($upper) {
-                $q->whereRaw('UPPER(a.tucashk_desc) LIKE ?', ["%{$upper}%"])
-                  ->orWhereRaw('UPPER(b.acc_name) LIKE ?', ["%{$upper}%"])
-                  ->orWhere('a.tucashk_no', 'like', "%{$this->searchKeyword}%");
+                $q->whereRaw('UPPER(a.co_desc) LIKE ?', ["%{$upper}%"])
+                  ->orWhereRaw('UPPER(t.tucico_desc) LIKE ?', ["%{$upper}%"])
+                  ->orWhereRaw('UPPER(cb.cb_desc) LIKE ?', ["%{$upper}%"])
+                  ->orWhere('a.co_no', 'like', "%{$this->searchKeyword}%");
             });
         }
 
         if ($this->filterBulan !== '') {
-            $query->whereRaw("TO_CHAR(a.tucashk_date,'MM/YYYY') = ?", [$this->filterBulan]);
+            $query->whereRaw("TO_CHAR(a.co_date,'MM/YYYY') = ?", [$this->filterBulan]);
         }
 
         return $query;
@@ -161,41 +149,43 @@ new class extends Component {
                                 <th class="px-4 py-3 font-semibold">TANGGAL</th>
                                 <th class="px-4 py-3 font-semibold">KETERANGAN</th>
                                 <th class="px-4 py-3 font-semibold text-right">NOMINAL</th>
-                                <th class="px-4 py-3 font-semibold">KAS</th>
-                                <th class="px-4 py-3 font-semibold">INFO</th>
+                                <th class="px-4 py-3 font-semibold">KATEGORI (TUCICO)</th>
+                                <th class="px-4 py-3 font-semibold">CARA BAYAR</th>
+                                <th class="px-4 py-3 font-semibold">KASIR</th>
                                 <th class="px-4 py-3 font-semibold">AKSI</th>
                             </tr>
                         </thead>
                         <tbody class="text-gray-700 divide-y divide-gray-200 dark:divide-gray-700 dark:text-gray-200">
                             @forelse($this->rows as $row)
-                                <tr wire:key="co-row-{{ $row->tucashk_no }}" class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
-                                    <td class="px-4 py-3 font-mono text-sm whitespace-nowrap">{{ $row->tucashk_no }}</td>
+                                <tr wire:key="co-row-{{ $row->co_no }}" class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
+                                    <td class="px-4 py-3 font-mono text-sm whitespace-nowrap">{{ $row->co_no }}</td>
                                     <td class="px-4 py-3 text-sm whitespace-nowrap">
-                                        <div>{{ $row->tucashk_date_display ?? '-' }}</div>
-                                        <div class="text-gray-400">Shift {{ $row->shift ?? '-' }}</div>
+                                        {{ $row->co_date_display ?? '-' }}
                                     </td>
                                     <td class="px-4 py-3 text-sm">
-                                        <div>{{ $row->tucashk_desc ?? '-' }}</div>
-                                        <div class="text-gray-400">{{ $row->acc_id }} - {{ $row->acc_name ?? '-' }}</div>
+                                        {{ $row->co_desc ?? '-' }}
                                     </td>
-                                    <td class="px-4 py-3 font-mono text-right whitespace-nowrap">Rp {{ number_format($row->tucashk_nominal ?? 0) }}</td>
+                                    <td class="px-4 py-3 font-mono text-right whitespace-nowrap">Rp {{ number_format($row->co_nominal ?? 0) }}</td>
                                     <td class="px-4 py-3 text-sm">
-                                        <div>{{ $row->acc_name_kas ?? '-' }}</div>
-                                        <div class="text-gray-400">{{ $row->acc_id_kas }}</div>
+                                        <div>{{ $row->tucico_desc ?? '-' }}</div>
+                                        <div class="text-xs text-gray-400 font-mono">{{ $row->tucico_id }}</div>
                                     </td>
                                     <td class="px-4 py-3 text-sm">
-                                        <div>{{ $row->emp_name ?? $row->emp_id ?? '-' }}</div>
-                                        <x-badge variant="success" class="mt-1">Posted</x-badge>
+                                        <div>{{ $row->cb_desc ?? '-' }}</div>
+                                        <div class="text-xs text-gray-400 font-mono">{{ $row->cb_id }}</div>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm">
+                                        {{ $row->kasir_name ?? $row->kasir_id ?? '-' }}
                                     </td>
                                     <td class="px-4 py-3">
                                         <div class="flex flex-wrap gap-2">
                                             <x-secondary-button type="button"
-                                                wire:click="openEdit('{{ $row->tucashk_no }}')" class="px-2 py-1 text-xs">
+                                                wire:click="openEdit('{{ $row->co_no }}')" class="px-2 py-1 text-xs">
                                                 Edit
                                             </x-secondary-button>
                                             @hasanyrole('Admin|Tu')
-                                                <x-confirm-button variant="danger" :action="'requestDelete(\'' . $row->tucashk_no . '\')'"
-                                                    title="Hapus Transaksi" message="Yakin ingin menghapus transaksi #{{ $row->tucashk_no }}?"
+                                                <x-confirm-button variant="danger" :action="'requestDelete(\'' . $row->co_no . '\')'"
+                                                    title="Hapus Transaksi" message="Yakin ingin menghapus transaksi #{{ $row->co_no }}?"
                                                     confirmText="Ya, hapus" cancelText="Batal"
                                                     class="px-2 py-1 text-xs">
                                                     Hapus
@@ -206,7 +196,7 @@ new class extends Component {
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
+                                    <td colspan="8" class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
                                         Tidak ada data pengeluaran kas.
                                     </td>
                                 </tr>

@@ -17,7 +17,7 @@ new class extends Component {
     public array $form = [
         'tucico_id'     => '',
         'tucico_desc'   => '',
-        'tucico_status' => '1',
+        'tucico_status' => 'CI',     // CI = Cash In (penerimaan), CO = Cash Out (pengeluaran)
         'active_status' => '1',
         'acc_id'        => '',
     ];
@@ -46,7 +46,7 @@ new class extends Component {
         $this->form = [
             'tucico_id'     => (string) $row->tucico_id,
             'tucico_desc'   => (string) ($row->tucico_desc ?? ''),
-            'tucico_status' => (string) ($row->tucico_status ?? '1'),
+            'tucico_status' => (string) ($row->tucico_status ?? 'CI'),
             'active_status' => (string) ($row->active_status ?? '1'),
             'acc_id'        => (string) ($row->acc_id ?? ''),
         ];
@@ -89,7 +89,7 @@ new class extends Component {
                 ? 'required|string|max:25|regex:/^[A-Z0-9_-]+$/|unique:tkacc_tucicos,tucico_id'
                 : 'required|string',
             'form.tucico_desc'   => 'required|string|max:100',
-            'form.tucico_status' => 'required|in:0,1',
+            'form.tucico_status' => 'required|in:CI,CO',
             'form.active_status' => 'required|in:0,1',
             'form.acc_id'        => 'required|string|max:25|exists:tkacc_accountses,acc_id',
         ];
@@ -140,7 +140,7 @@ new class extends Component {
     private function resetForm(): void
     {
         $this->form = [
-            'tucico_id' => '', 'tucico_desc' => '', 'tucico_status' => '1',
+            'tucico_id' => '', 'tucico_desc' => '', 'tucico_status' => 'CI',
             'active_status' => '1', 'acc_id' => '',
         ];
         $this->resetValidation();
@@ -210,14 +210,18 @@ new class extends Component {
 
                         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
-                                <x-input-label value="TUCICO Status" />
+                                <x-input-label value="Kategori (CI / CO)" :required="true" />
                                 <x-select-input wire:model.live="form.tucico_status" class="w-full mt-1">
-                                    <option value="1">Aktif</option>
-                                    <option value="0">Non-aktif</option>
+                                    <option value="CI">CI — Cash In (Penerimaan)</option>
+                                    <option value="CO">CO — Cash Out (Pengeluaran)</option>
                                 </x-select-input>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    Dipakai TKTXN_TUCASHINS (CI) atau TKTXN_TUCASHOUTS (CO).
+                                </p>
+                                <x-input-error :messages="$errors->get('form.tucico_status')" class="mt-1" />
                             </div>
                             <div>
-                                <x-input-label value="Master Status" />
+                                <x-input-label value="Status Aktif" :required="true" />
                                 <x-select-input wire:model.live="form.active_status" class="w-full mt-1">
                                     <option value="1">Aktif</option>
                                     <option value="0">Non-aktif</option>

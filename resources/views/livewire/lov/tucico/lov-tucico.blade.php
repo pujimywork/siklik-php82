@@ -1,9 +1,14 @@
 <?php
 
 /**
- * LOV TUCICO — sumber: tkacc_tucicos where active_status='1' AND tucico_status='1'.
+ * LOV TUCICO — sumber: tkacc_tucicos where active_status='1'.
  *
- * Payload: ['tucico_id', 'tucico_desc', 'acc_id', 'acc_name']
+ * tucico_status = 'CI' (cash in / penerimaan) atau 'CO' (cash out / pengeluaran).
+ *
+ * Props:
+ *   - filterStatus: 'CI' | 'CO' | '' → filter kategori. Default: '' (semua).
+ *
+ * Payload: ['tucico_id', 'tucico_desc', 'tucico_status', 'acc_id', 'acc_name']
  */
 
 use Livewire\Component;
@@ -14,6 +19,9 @@ new class extends Component {
     public string $target = 'default';
     public string $label = 'TUCICO';
     public string $placeholder = 'Ketik kode/nama TUCICO...';
+
+    /** Filter kategori: 'CI' / 'CO' / '' (semua) */
+    public string $filterStatus = '';
 
     public string $search = '';
     public array $options = [];
@@ -42,7 +50,7 @@ new class extends Component {
     {
         $row = DB::table('tkacc_tucicos as t')
             ->leftJoin('tkacc_accountses as a', 'a.acc_id', '=', 't.acc_id')
-            ->select('t.tucico_id', 't.tucico_desc', 't.acc_id', 'a.acc_desc as acc_name')
+            ->select('t.tucico_id', 't.tucico_desc', 't.tucico_status', 't.acc_id', 'a.acc_desc as acc_name')
             ->where('t.tucico_id', $id)->first();
         if ($row) $this->selected = $this->buildPayload($row);
     }
@@ -76,20 +84,26 @@ new class extends Component {
 
     protected function baseQuery(): \Illuminate\Database\Query\Builder
     {
-        return DB::table('tkacc_tucicos as t')
+        $q = DB::table('tkacc_tucicos as t')
             ->leftJoin('tkacc_accountses as a', 'a.acc_id', '=', 't.acc_id')
-            ->select('t.tucico_id', 't.tucico_desc', 't.acc_id', 'a.acc_desc as acc_name')
-            ->where('t.active_status', '1')
-            ->where('t.tucico_status', '1');
+            ->select('t.tucico_id', 't.tucico_desc', 't.tucico_status', 't.acc_id', 'a.acc_desc as acc_name')
+            ->where('t.active_status', '1');
+
+        if ($this->filterStatus !== '') {
+            $q->where('t.tucico_status', $this->filterStatus);
+        }
+
+        return $q;
     }
 
     protected function buildPayload(object $r): array
     {
         return [
-            'tucico_id'   => (string) $r->tucico_id,
-            'tucico_desc' => (string) ($r->tucico_desc ?? ''),
-            'acc_id'      => (string) ($r->acc_id ?? ''),
-            'acc_name'    => (string) ($r->acc_name ?? ''),
+            'tucico_id'     => (string) $r->tucico_id,
+            'tucico_desc'   => (string) ($r->tucico_desc ?? ''),
+            'tucico_status' => (string) ($r->tucico_status ?? ''),
+            'acc_id'        => (string) ($r->acc_id ?? ''),
+            'acc_name'      => (string) ($r->acc_name ?? ''),
         ];
     }
 

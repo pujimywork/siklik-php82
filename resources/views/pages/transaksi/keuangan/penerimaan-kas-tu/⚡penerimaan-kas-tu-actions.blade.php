@@ -1,5 +1,15 @@
 <?php
 
+/**
+ * Penerimaan Kas TU — TKTXN_TUCASHINS (CI = Cash In).
+ *
+ * Schema:
+ *   ci_no (PK), ci_date, ci_desc, ci_nominal, ci_status,
+ *   tucico_id (FK → TKACC_TUCICOS where tucico_status='CI'),
+ *   kasir_id  (FK → TKMST_KASIRS),
+ *   cb_id     (FK → TKACC_CARABAYARS).
+ */
+
 use Livewire\Component;
 use Livewire\Attributes\On;
 use Carbon\Carbon;
@@ -14,14 +24,12 @@ new class extends Component {
     public ?string $editNo = null;
     public array $renderVersions = [];
 
-    // ── Form fields ──
-    public ?string $accId = null;
-    public ?string $accName = null;
-    public ?string $accIdKas = null;
-    public ?string $accNameKas = null;
-    public ?string $tucashkDate = null;
-    public ?string $tucashkDesc = null;
-    public ?int $tucashkNominal = null;
+    // ── Form fields (TKTXN_TUCASHINS) ──
+    public ?string $tucicoId = null;     // kategori CI (TKACC_TUCICOS where tucico_status='CI')
+    public ?string $cbId = null;         // cara bayar
+    public ?string $ciDate = null;
+    public ?string $ciDesc = null;
+    public ?int    $ciNominal = null;
 
     public function mount(): void
     {
@@ -35,55 +43,53 @@ new class extends Component {
         $this->resetFormFields();
         $this->formMode = 'create';
         $this->editNo = null;
-        $this->tucashkDate = Carbon::now()->format('d/m/Y H:i:s');
+        $this->ciDate = Carbon::now()->format('d/m/Y H:i:s');
         $this->incrementVersion('modal');
         $this->dispatch('open-modal', name: 'penerimaan-kas-tu-actions');
-        $this->dispatch('focus-tucashk-date');
+        $this->dispatch('focus-ci-date');
     }
 
     /* ── Open Edit ── */
     #[On('penerimaan-kas.openEdit')]
-    public function openEdit(string $tucashkNo): void
+    public function openEdit(string $ciNo): void
     {
-        $row = DB::table('rstxn_tucashks')->where('tucashk_no', $tucashkNo)->first();
+        $row = DB::table('tktxn_tucashins')->where('ci_no', $ciNo)->first();
         if (!$row) {
             $this->dispatch('toast', type: 'error', message: 'Data tidak ditemukan.');
             return;
         }
 
-        if ($row->tucashk_status === 'L') {
+        if (($row->ci_status ?? '') === 'L') {
             $this->dispatch('toast', type: 'warning', message: 'Transaksi sudah diposting, tidak bisa diedit.');
             return;
         }
 
         $this->resetFormFields();
-        $this->formMode = 'edit';
-        $this->editNo = (string) $row->tucashk_no;
-        $this->accId = $row->acc_id;
-        $this->accIdKas = $row->acc_id_kas;
-        $this->tucashkDate = $row->tucashk_date ? Carbon::parse($row->tucashk_date)->format('d/m/Y H:i:s') : null;
-        $this->tucashkDesc = $row->tucashk_desc;
-        $this->tucashkNominal = (int) ($row->tucashk_nominal ?? 0);
+        $this->formMode  = 'edit';
+        $this->editNo    = (string) $row->ci_no;
+        $this->tucicoId  = $row->tucico_id;
+        $this->cbId      = $row->cb_id;
+        $this->ciDate    = $row->ci_date ? Carbon::parse($row->ci_date)->format('d/m/Y H:i:s') : null;
+        $this->ciDesc    = $row->ci_desc;
+        $this->ciNominal = (int) ($row->ci_nominal ?? 0);
 
         $this->incrementVersion('modal');
         $this->dispatch('open-modal', name: 'penerimaan-kas-tu-actions');
-        $this->dispatch('focus-tucashk-desc');
+        $this->dispatch('focus-ci-desc');
     }
 
     /* ── LOV Listeners ── */
-    #[On('lov.selected.akun-ci-tu')]
-    public function onAkunCISelected(string $target, ?array $payload): void
+    #[On('lov.selected.tucico-ci-tu')]
+    public function onTucicoSelected(string $target, ?array $payload): void
     {
-        $this->accId = $payload['acc_id'] ?? null;
-        $this->accName = $payload['acc_name'] ?? null;
-        $this->dispatch('focus-lov-kas-ci');
+        $this->tucicoId = $payload['tucico_id'] ?? null;
+        $this->dispatch('focus-cb-tu');
     }
 
-    #[On('lov.selected.akun-kas-tu')]
-    public function onAkunKasSelected(string $target, ?array $payload): void
+    #[On('lov.selected.cb-ci-tu')]
+    public function onCaraBayarSelected(string $target, ?array $payload): void
     {
-        $this->accIdKas = $payload['acc_id'] ?? null;
-        $this->accNameKas = $payload['acc_name'] ?? null;
+        $this->cbId = $payload['cb_id'] ?? null;
         $this->dispatch('focus-btn-save-ci');
     }
 
@@ -91,34 +97,23 @@ new class extends Component {
     public function save(): void
     {
         $this->validate([
-            'accId' => 'required|string',
-            'accIdKas' => 'required|string',
-            'tucashkDate' => 'required|date_format:d/m/Y H:i:s',
-            'tucashkDesc' => 'required|string|min:3|max:100',
-            'tucashkNominal' => 'required|integer|min:1',
+            'tucicoId'  => 'required|string|exists:tkacc_tucicos,tucico_id',
+            'cbId'      => 'required|string|exists:tkacc_carabayars,cb_id',
+            'ciDate'    => 'required|date_format:d/m/Y H:i:s',
+            'ciDesc'    => 'required|string|min:3|max:100',
+            'ciNominal' => 'required|integer|min:1',
         ], [
-            'accId.required' => 'Akun penerimaan wajib dipilih.',
-            'accIdKas.required' => 'Akun kas wajib dipilih.',
-            'tucashkDate.required' => 'Tanggal wajib diisi.',
-            'tucashkDate.date_format' => 'Format tanggal harus dd/mm/yyyy hh:mm:ss.',
-            'tucashkDesc.required' => 'Keterangan wajib diisi.',
-            'tucashkDesc.min' => 'Keterangan minimal 3 karakter.',
-            'tucashkNominal.required' => 'Nominal wajib diisi.',
-            'tucashkNominal.min' => 'Nominal minimal Rp 1.',
+            'tucicoId.required'  => 'Kategori penerimaan (TUCICO) wajib dipilih.',
+            'tucicoId.exists'    => 'Kategori TUCICO tidak valid.',
+            'cbId.required'      => 'Cara bayar wajib dipilih.',
+            'cbId.exists'        => 'Cara bayar tidak valid.',
+            'ciDate.required'    => 'Tanggal wajib diisi.',
+            'ciDate.date_format' => 'Format tanggal harus dd/mm/yyyy hh:mm:ss.',
+            'ciDesc.required'    => 'Keterangan wajib diisi.',
+            'ciDesc.min'         => 'Keterangan minimal 3 karakter.',
+            'ciNominal.required' => 'Nominal wajib diisi.',
+            'ciNominal.min'      => 'Nominal minimal Rp 1.',
         ]);
-
-        // Cek akun kas tersedia (siklik: filter kas_status='1' di tkacc_accountses;
-        // tdk ada user_kas mapping)
-        $cekakunkas = DB::table('tkacc_accountses')
-            ->where('active_status', '1')
-            ->where('kas_status', '1')
-            ->count();
-
-        if ($cekakunkas === 0) {
-            $this->dispatch('toast', type: 'error',
-                message: 'Belum ada akun kas aktif di master. Set akun di Master Akun → tipe Kas.');
-            return;
-        }
 
         // Resolve kasir_id dari auth user (USERS.myuser_code = TKMST_KASIRS.kasir_id).
         $myuserCode = auth()->user()->myuser_code ?? null;
@@ -130,47 +125,27 @@ new class extends Component {
                 message: 'Profil kasir anda belum terdaftar di master kasir.');
             return;
         }
-        // Tetap simpan ke variabel $empId untuk kompat dgn kode di bawah ini
-        $empId = $kasirId;
-
-        // Ambil shift saat ini
-        $now = Carbon::now();
-        $findShift = DB::table('rstxn_shiftctls')
-            ->select('shift')
-            ->whereNotNull('shift_start')->whereNotNull('shift_end')
-            ->whereRaw('? BETWEEN shift_start AND shift_end', [$now->format('H:i:s')])
-            ->first();
-        $shift = (string) ($findShift?->shift ?? 1);
 
         try {
-            DB::transaction(function () use ($empId, $shift) {
-                if ($this->editNo) {
-                    DB::table('rstxn_tucashks')
-                        ->where('tucashk_no', $this->editNo)
-                        ->update([
-                            'tucashk_date' => DB::raw("to_date('{$this->tucashkDate}','dd/mm/yyyy hh24:mi:ss')"),
-                            'tucashk_desc' => $this->tucashkDesc,
-                            'tucashk_nominal' => $this->tucashkNominal,
-                            'acc_id' => $this->accId,
-                            'acc_id_kas' => $this->accIdKas,
-                            'emp_id' => $empId,
-                            'shift' => $shift,
-                            'tucashk_status' => 'L',
-                        ]);
-                } else {
-                    $nextNo = DB::selectOne("SELECT tucashk_seq.NEXTVAL AS val FROM dual")->val;
+            DB::transaction(function () use ($kasirId) {
+                $payload = [
+                    'ci_date'    => DB::raw("to_date('{$this->ciDate}','dd/mm/yyyy hh24:mi:ss')"),
+                    'ci_desc'    => $this->ciDesc,
+                    'ci_nominal' => $this->ciNominal,
+                    'ci_status'  => 'L',
+                    'tucico_id'  => $this->tucicoId,
+                    'kasir_id'   => $kasirId,
+                    'cb_id'      => $this->cbId,
+                ];
 
-                    DB::table('rstxn_tucashks')->insert([
-                        'tucashk_no' => $nextNo,
-                        'tucashk_date' => DB::raw("to_date('{$this->tucashkDate}','dd/mm/yyyy hh24:mi:ss')"),
-                        'tucashk_desc' => $this->tucashkDesc,
-                        'tucashk_nominal' => $this->tucashkNominal,
-                        'acc_id' => $this->accId,
-                        'acc_id_kas' => $this->accIdKas,
-                        'emp_id' => $empId,
-                        'shift' => $shift,
-                        'tucashk_status' => 'L',
-                    ]);
+                if ($this->editNo) {
+                    DB::table('tktxn_tucashins')
+                        ->where('ci_no', $this->editNo)
+                        ->update($payload);
+                } else {
+                    // ci_no auto-increment via NVL(MAX)+1 (siklik-lite pattern, tdk pakai sequence)
+                    $nextNo = (int) DB::table('tktxn_tucashins')->max('ci_no') + 1;
+                    DB::table('tktxn_tucashins')->insert(array_merge(['ci_no' => $nextNo], $payload));
                 }
             });
 
@@ -184,7 +159,7 @@ new class extends Component {
 
     /* ── Delete ── */
     #[On('penerimaan-kas.requestDelete')]
-    public function deleteFromGrid(string $tucashkNo): void
+    public function deleteFromGrid(string $ciNo): void
     {
         if (!auth()->user()->hasAnyRole(['Admin', 'Tu'])) {
             $this->dispatch('toast', type: 'error', message: 'Hanya Admin dan TU yang dapat membatalkan transaksi.');
@@ -192,8 +167,7 @@ new class extends Component {
         }
 
         try {
-            $deleted = DB::table('rstxn_tucashks')->where('tucashk_no', $tucashkNo)->delete();
-
+            $deleted = DB::table('tktxn_tucashins')->where('ci_no', $ciNo)->delete();
             if ($deleted === 0) {
                 $this->dispatch('toast', type: 'error', message: 'Data transaksi tidak ditemukan.');
                 return;
@@ -216,7 +190,7 @@ new class extends Component {
 
     protected function resetFormFields(): void
     {
-        $this->reset(['editNo', 'accId', 'accName', 'accIdKas', 'accNameKas', 'tucashkDate', 'tucashkDesc', 'tucashkNominal']);
+        $this->reset(['editNo', 'tucicoId', 'cbId', 'ciDate', 'ciDesc', 'ciNominal']);
         $this->resetValidation();
     }
 };
@@ -228,42 +202,24 @@ new class extends Component {
             wire:key="{{ $this->renderKey('modal', [$formMode, $editNo]) }}">
 
             {{-- HEADER --}}
-            <div class="relative px-6 py-5 border-b border-gray-200 dark:border-gray-700">
-                <div class="absolute inset-0 opacity-[0.06] dark:opacity-[0.10]"
-                    style="background-image: radial-gradient(currentColor 1px, transparent 1px); background-size: 14px 14px;">
-                </div>
-
-                <div class="relative flex items-start justify-between gap-4">
+            <div class="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-start justify-between gap-4">
                     <div>
-                        <div class="flex items-center gap-3">
-                            <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-brand-green/10 dark:bg-brand-lime/15">
-                                <img src="{{ asset('images/Logogram black solid.png') }}" alt="RSI Madinah" class="block w-6 h-6 dark:hidden" />
-                                <img src="{{ asset('images/Logogram white solid.png') }}" alt="RSI Madinah" class="hidden w-6 h-6 dark:block" />
-                            </div>
-
-                            <div>
-                                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                                    {{ $editNo ? "Edit Penerimaan Kas #{$editNo}" : 'Tambah Penerimaan Kas Baru' }}
-                                </h2>
-                                <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-                                    Catat penerimaan kas (Cash-In) di luar transaksi pelayanan RS.
-                                </p>
-                            </div>
-                        </div>
-
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                            {{ $editNo ? "Edit Penerimaan Kas #{$editNo}" : 'Tambah Penerimaan Kas Baru' }}
+                        </h2>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Catat penerimaan kas (Cash-In) di luar transaksi pelayanan klinik.
+                        </p>
                         <div class="mt-3">
                             <x-badge :variant="$editNo ? 'warning' : 'success'">
                                 {{ $editNo ? 'Mode: Edit' : 'Mode: Tambah' }}
                             </x-badge>
                         </div>
                     </div>
-
                     <x-icon-button color="gray" type="button" wire:click="closeModal">
-                        <span class="sr-only">Close</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                clip-rule="evenodd" />
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                         </svg>
                     </x-icon-button>
                 </div>
@@ -271,56 +227,63 @@ new class extends Component {
 
             {{-- BODY --}}
             <div class="flex-1 px-4 py-4 bg-gray-50/70 dark:bg-gray-950/20">
-                <div class="max-w-4xl">
-                    <x-border-form title="Data Penerimaan Kas (Cash-In)"
-                        x-data
-                        x-on:focus-tucashk-date.window="$nextTick(() => setTimeout(() => $refs.inputTucashkDate?.focus(), 150))"
-                        x-on:focus-tucashk-desc.window="$nextTick(() => setTimeout(() => $refs.inputTucashkDesc?.focus(), 150))"
-                        x-on:focus-lov-kas-ci.window="$nextTick(() => setTimeout(() => $refs.lovKasWrapper?.querySelector('input:not([disabled])')?.focus(), 150))"
-                        x-on:focus-btn-save-ci.window="$nextTick(() => setTimeout(() => $refs.btnSaveCi?.focus(), 150))">
+                <div class="max-w-4xl"
+                    x-data
+                    x-on:focus-ci-date.window="$nextTick(() => setTimeout(() => $refs.inputCiDate?.focus(), 150))"
+                    x-on:focus-ci-desc.window="$nextTick(() => setTimeout(() => $refs.inputCiDesc?.focus(), 150))"
+                    x-on:focus-cb-tu.window="$nextTick(() => setTimeout(() => $refs.lovCbWrapper?.querySelector('input:not([disabled])')?.focus(), 150))"
+                    x-on:focus-btn-save-ci.window="$nextTick(() => setTimeout(() => $refs.btnSaveCi?.focus(), 150))">
+                    <x-border-form title="Data Penerimaan Kas (Cash-In)">
                         <div class="space-y-5">
 
                             {{-- Tanggal --}}
                             <div>
                                 <x-input-label value="Tanggal" :required="true" />
-                                <x-text-input type="text" wire:model="tucashkDate" placeholder="dd/mm/yyyy hh:mm:ss"
-                                    x-ref="inputTucashkDate"
-                                    x-on:keydown.enter.prevent="$refs.inputTucashkDesc?.focus()"
+                                <x-text-input type="text" wire:model="ciDate" placeholder="dd/mm/yyyy hh:mm:ss"
+                                    x-ref="inputCiDate"
+                                    x-on:keydown.enter.prevent="$refs.inputCiDesc?.focus()"
                                     class="w-full mt-1" />
-                                <x-input-error :messages="$errors->get('tucashkDate')" class="mt-1" />
+                                <x-input-error :messages="$errors->get('ciDate')" class="mt-1" />
                             </div>
 
                             {{-- Keterangan --}}
                             <div>
                                 <x-input-label value="Keterangan" :required="true" />
-                                <x-text-input type="text" wire:model="tucashkDesc" placeholder="Keterangan penerimaan kas"
-                                    x-ref="inputTucashkDesc"
-                                    x-on:keydown.enter.prevent="$refs.inputTucashkNominal?.focus()"
+                                <x-text-input type="text" wire:model="ciDesc" placeholder="Keterangan penerimaan kas"
+                                    x-ref="inputCiDesc"
+                                    x-on:keydown.enter.prevent="$refs.inputCiNominal?.focus()"
                                     class="w-full mt-1" />
-                                <x-input-error :messages="$errors->get('tucashkDesc')" class="mt-1" />
+                                <x-input-error :messages="$errors->get('ciDesc')" class="mt-1" />
                             </div>
 
                             {{-- Nominal (Rp) --}}
                             <div>
                                 <x-input-label value="Nominal (Rp)" :required="true" />
-                                <x-text-input-number wire:model="tucashkNominal"
-                                    x-ref="inputTucashkNominal" />
-                                <x-input-error :messages="$errors->get('tucashkNominal')" class="mt-1" />
+                                <x-text-input-number wire:model="ciNominal" x-ref="inputCiNominal" />
+                                <x-input-error :messages="$errors->get('ciNominal')" class="mt-1" />
                             </div>
 
                             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                {{-- Akun Penerimaan (CI) --}}
+                                {{-- Kategori TUCICO (CI) --}}
                                 <div>
-                                    <livewire:lov.akun.lov-akun target="akun-ci-tu" label="Akun Penerimaan" :initialAccId="$accId"
-                                        wire:key="lov-ci-{{ $editNo ?? 'new' }}-{{ $renderVersions['modal'] ?? 0 }}" />
-                                    <x-input-error :messages="$errors->get('accId')" class="mt-1" />
+                                    <livewire:lov.tucico.lov-tucico
+                                        target="tucico-ci-tu"
+                                        label="Kategori Penerimaan (CI)"
+                                        placeholder="Cari kategori CI..."
+                                        filterStatus="CI"
+                                        :initialTucicoId="$tucicoId"
+                                        wire:key="lov-tucico-ci-{{ $editNo ?? 'new' }}-{{ $renderVersions['modal'] ?? 0 }}" />
+                                    <x-input-error :messages="$errors->get('tucicoId')" class="mt-1" />
                                 </div>
 
-                                {{-- Akun Kas --}}
-                                <div x-ref="lovKasWrapper">
-                                    <livewire:lov.akun.lov-akun target="akun-kas-tu" :kasOnly="true" label="Akun Kas" :initialAccId="$accIdKas"
-                                        wire:key="lov-kas-{{ $editNo ?? 'new' }}-{{ $renderVersions['modal'] ?? 0 }}" />
-                                    <x-input-error :messages="$errors->get('accIdKas')" class="mt-1" />
+                                {{-- Cara Bayar --}}
+                                <div x-ref="lovCbWrapper">
+                                    <livewire:lov.cara-bayar.lov-cara-bayar
+                                        target="cb-ci-tu"
+                                        label="Cara Bayar"
+                                        :initialCbId="$cbId"
+                                        wire:key="lov-cb-ci-{{ $editNo ?? 'new' }}-{{ $renderVersions['modal'] ?? 0 }}" />
+                                    <x-input-error :messages="$errors->get('cbId')" class="mt-1" />
                                 </div>
                             </div>
 
@@ -335,12 +298,8 @@ new class extends Component {
                     <div class="text-xs text-gray-500 dark:text-gray-400">
                         Status transaksi otomatis <strong>Posted (L)</strong> saat disimpan.
                     </div>
-
                     <div class="flex justify-end gap-2">
-                        <x-secondary-button type="button" wire:click="closeModal">
-                            Batal
-                        </x-secondary-button>
-
+                        <x-secondary-button type="button" wire:click="closeModal">Batal</x-secondary-button>
                         <x-primary-button type="button" wire:click="save" wire:loading.attr="disabled" x-ref="btnSaveCi">
                             <span wire:loading.remove>Simpan & Posting</span>
                             <span wire:loading><x-loading /> Menyimpan...</span>

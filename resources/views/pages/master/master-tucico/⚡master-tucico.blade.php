@@ -39,7 +39,8 @@ new class extends Component {
             ->select('t.tucico_id', 't.tucico_desc', 't.tucico_status',
                 't.active_status', 't.acc_id', 'a.acc_desc as acc_name')
             ->orderByRaw("CASE WHEN t.active_status = '1' THEN 0 ELSE 1 END")
-            ->orderBy('t.tucico_id');
+            ->orderBy('t.tucico_status')
+            ->orderBy('t.tucico_desc');
 
         if (trim($this->searchKeyword) !== '') {
             $kw = mb_strtoupper(trim($this->searchKeyword));
@@ -101,6 +102,7 @@ new class extends Component {
                             <tr class="text-left">
                                 <th class="px-4 py-3 font-semibold">ID</th>
                                 <th class="px-4 py-3 font-semibold">DESKRIPSI</th>
+                                <th class="px-4 py-3 font-semibold w-20 text-center">CI/CO</th>
                                 <th class="px-4 py-3 font-semibold">AKUN</th>
                                 <th class="px-4 py-3 font-semibold w-24 text-center">STATUS</th>
                                 <th class="px-4 py-3 font-semibold w-48">AKSI</th>
@@ -112,6 +114,15 @@ new class extends Component {
                                     class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
                                     <td class="px-4 py-3 font-mono text-xs">{{ $row->tucico_id }}</td>
                                     <td class="px-4 py-3 font-semibold">{{ $row->tucico_desc }}</td>
+                                    <td class="px-4 py-3 text-center">
+                                        @if ((string) $row->tucico_status === 'CI')
+                                            <span class="px-2 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-800">CI</span>
+                                        @elseif ((string) $row->tucico_status === 'CO')
+                                            <span class="px-2 py-0.5 text-xs rounded-full bg-rose-100 text-rose-800">CO</span>
+                                        @else
+                                            <span class="text-xs text-gray-400">{{ $row->tucico_status ?: '—' }}</span>
+                                        @endif
+                                    </td>
                                     <td class="px-4 py-3 text-xs text-gray-600 dark:text-gray-400">
                                         @if (!empty($row->acc_id))
                                             <span class="font-mono">{{ $row->acc_id }}</span>
@@ -152,7 +163,7 @@ new class extends Component {
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
+                                    <td colspan="6" class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
                                         Data TUCICO tidak ditemukan.
                                     </td>
                                 </tr>
