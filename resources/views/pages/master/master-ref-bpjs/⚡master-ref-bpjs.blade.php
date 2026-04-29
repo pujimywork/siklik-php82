@@ -122,14 +122,54 @@ new class extends Component {
         $out = [];
         foreach ($this->categories as $cat) {
             $row = $rows->get($cat['key']);
-            $count = 0;
+            $items = [];
             if ($row && $row->ref_json) {
                 $decoded = json_decode($row->ref_json, true);
-                $count = is_array($decoded) ? count($decoded) : 0;
+                $items = is_array($decoded) ? $decoded : [];
             }
-            $out[$cat['key']] = ['count' => $count];
+            $out[$cat['key']] = [
+                'count' => count($items),
+                'items' => $this->normalizeItems($items),
+            ];
         }
         return $out;
+    }
+
+    /**
+     * Normalisasi list BPJS jadi [['code' => ..., 'name' => ...], ...]
+     * Auto-detect key kode (prefix kd / kode / suffix id) & nama
+     * (prefix nm / nama / suffix desc / name). Fallback 2 key pertama.
+     */
+    private function normalizeItems(array $items): array
+    {
+        if (empty($items)) return [];
+
+        $first = (array) $items[0];
+        $codeKey = null;
+        $nameKey = null;
+
+        foreach (array_keys($first) as $k) {
+            $lk = strtolower($k);
+            if ($codeKey === null && (str_starts_with($lk, 'kd') || $lk === 'kode' || str_ends_with($lk, 'id'))) {
+                $codeKey = $k;
+            }
+            if ($nameKey === null && (str_starts_with($lk, 'nm') || $lk === 'nama' || str_ends_with($lk, 'desc') || str_ends_with($lk, 'name'))) {
+                $nameKey = $k;
+            }
+        }
+
+        // Fallback: pakai 2 key pertama kalau auto-detect gagal
+        $keys = array_keys($first);
+        $codeKey ??= $keys[0] ?? null;
+        $nameKey ??= $keys[1] ?? $codeKey;
+
+        return array_map(function ($it) use ($codeKey, $nameKey) {
+            $it = (array) $it;
+            return [
+                'code' => (string) ($it[$codeKey] ?? ''),
+                'name' => (string) ($it[$nameKey] ?? ''),
+            ];
+        }, $items);
     }
 };
 ?>
@@ -156,12 +196,13 @@ new class extends Component {
                             <th class="px-4 py-3 font-semibold w-1/4">Kategori</th>
                             <th class="px-4 py-3 font-semibold">Deskripsi</th>
                             <th class="px-4 py-3 font-semibold w-24 text-right">Jumlah</th>
+                            <th class="px-4 py-3 font-semibold w-64">Preview Cache</th>
                             <th class="px-4 py-3 font-semibold w-32 text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="text-gray-700 divide-y divide-gray-200 dark:divide-gray-700 dark:text-gray-200">
                         @foreach ($categories as $cat)
-                            @php $meta = $this->refRows[$cat['key']] ?? ['count' => 0]; @endphp
+                            @php $meta = $this->refRows[$cat['key']] ?? ['count' => 0, 'items' => []]; @endphp
                             <tr wire:key="ref-bpjs-{{ $cat['key'] }}" class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
                                 <td class="px-4 py-3 font-semibold">{{ $cat['key'] }}</td>
                                 <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ $cat['desc'] }}</td>
@@ -172,6 +213,23 @@ new class extends Component {
                                         </span>
                                     @else
                                         <span class="text-xs text-gray-400">—</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3">
+                                    @if ($meta['count'] > 0)
+                                        <x-select-input title="Display only — preview entries cache">
+                                            <option value="">— lihat {{ $meta['count'] }} entries —</option>
+                                            @foreach ($meta['items'] as $it)
+                                                <option value="{{ $it['code'] }}">
+                                                    {{ $it['code'] }}
+                                                    @if ($it['name'] !== '' && $it['name'] !== $it['code'])
+                                                        — {{ $it['name'] }}
+                                                    @endif
+                                                </option>
+                                            @endforeach
+                                        </x-select-input>
+                                    @else
+                                        <span class="text-xs italic text-gray-400">belum di-sync</span>
                                     @endif
                                 </td>
                                 <td class="px-4 py-3 text-center">
