@@ -800,13 +800,11 @@ new class extends Component {
                                     </div>
                                 @endif
 
-                                {{-- REKONSILIASI OBAT TAB --}}
-                                @if (isset($dataDaftarPoliRJ['anamnesa']['rekonsiliasiObatTab']))
-                                    <div class="w-full"
-                                        x-show.transition.in.opacity.duration.600="activeTab === '{{ $dataDaftarPoliRJ['anamnesa']['rekonsiliasiObatTab'] ?? 'Rekonsiliasi Obat' }}'">
-                                        @include('pages.transaksi.rj.emr-rj.anamnesa.tabs.rekonsiliasi-obat-tab')
-                                    </div>
-                                @endif
+                                {{-- REKONSILIASI OBAT TAB (no @if guard — selalu render, visibility via x-show) --}}
+                                <div class="w-full"
+                                    x-show.transition.in.opacity.duration.600="activeTab === 'Rekonsiliasi Obat'">
+                                    @include('pages.transaksi.rj.emr-rj.anamnesa.tabs.rekonsiliasi-obat-tab')
+                                </div>
                             </div>
                         </div>
                     </div>
