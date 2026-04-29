@@ -36,11 +36,6 @@ new class extends Component {
         $this->dispatch('userControl.openEdit', userId: $userId);
     }
 
-    public function openKasManage(int $userId): void
-    {
-        $this->dispatch('kasUserControl.openManage', userId: $userId);
-    }
-
     public function requestDelete(int $userId): void
     {
         $this->dispatch('userControl.requestDelete', userId: $userId);
@@ -226,7 +221,7 @@ new class extends Component {
     <header class="bg-white shadow dark:bg-gray-800">
         <div class="w-full px-4 py-2 sm:px-6 lg:px-8">
             <h2 class="text-2xl font-bold leading-tight text-gray-900 dark:text-gray-100">User Control</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Kelola user, hak akses, & akun kas</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Kelola user, hak akses, & mapping kasir</p>
         </div>
     </header>
 
@@ -311,7 +306,7 @@ new class extends Component {
                             <tr class="text-left">
                                 <th class="px-4 py-3 font-semibold">Nama & Kode</th>
                                 <th class="px-4 py-3 font-semibold">Email</th>
-                                <th class="px-4 py-3 font-semibold">EMP ID</th>
+                                <th class="px-4 py-3 font-semibold">Kasir</th>
                                 <th class="px-4 py-3 font-semibold">TTD</th>
                                 <th class="px-4 py-3 font-semibold">Role</th>
                                 <th class="px-4 py-3 font-semibold">Dibuat</th>
@@ -435,21 +430,13 @@ new class extends Component {
                                                 Edit User
                                             </x-outline-button>
 
-                                            {{-- ✅ Kelola Kas: x-secondary-button (aksi sekunder/manajemen) --}}
-                                            <x-secondary-button type="button"
-                                                wire:click="openKasManage({{ $row->id }})">
-                                                Kelola Kas
-                                                @if ($row->kas_count > 0)
-                                                    <span
-                                                        class="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-brand-green text-white dark:bg-brand-lime dark:text-gray-900">
-                                                        {{ $row->kas_count }}
-                                                    </span>
-                                                @endif
-                                            </x-secondary-button>
+                                            {{-- "Kelola Kas" per-user dihapus untuk siklik:
+                                                 mapping kas dilakukan di master Cara Bayar
+                                                 (TKACC_CARABAYARS) — bukan per user. --}}
 
                                             {{-- ✅ Hapus: x-confirm-button variant="danger" (sama seperti master-poli) --}}
                                             <x-confirm-button variant="danger" :action="'requestDelete(' . $row->id . ')'" title="Hapus User"
-                                                message="Yakin hapus user {{ $row->myuser_name }}? Semua data terkait termasuk akses kas akan dihapus."
+                                                message="Yakin hapus user {{ $row->myuser_name }}?"
                                                 confirmText="Ya, hapus" cancelText="Batal">
                                                 Hapus
                                             </x-confirm-button>
@@ -482,9 +469,6 @@ new class extends Component {
 
             {{-- Modals --}}
             <livewire:pages::database-monitor.user-control.user-control-actions wire:key="user-control-actions" />
-
-            <livewire:pages::database-monitor.user-control.kas-user-control.kas-user-control-actions
-                wire:key="kas-user-control-actions" />
 
         </div>
     </div>
