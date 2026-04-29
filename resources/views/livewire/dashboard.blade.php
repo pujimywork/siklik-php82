@@ -43,6 +43,11 @@ new class extends Component {
             $entry(['group' => 'Master Klinik', 'groupOrder' => 1, 'order' => 15, 'route' => 'master.medik',           'title' => 'Master Alat Medis',      'desc' => 'Tracking alat medis (kondisi, sertifikat, izin)','roles' => ['admin'], 'badge' => 'Klinik']),
             $entry(['group' => 'Master Klinik', 'groupOrder' => 1, 'order' => 16, 'route' => 'master.ref-bpjs',        'title' => 'Master Ref BPJS',        'desc' => 'Cache reference BPJS PCare (alergi, kesadaran, prognosa)', 'roles' => ['admin'], 'badge' => 'BPJS']),
 
+            // ── Master Akuntansi ──────────────────────────────────────
+            $entry(['group' => 'Master Akuntansi', 'groupOrder' => 4, 'order' => 1, 'route' => 'master.group-akun', 'title' => 'Master Group Akun', 'desc' => 'Pengelompokan akun (Aktiva/Pasiva/Modal/Pendapatan/Biaya)',     'roles' => ['admin'], 'badge' => 'Akuntansi']),
+            $entry(['group' => 'Master Akuntansi', 'groupOrder' => 4, 'order' => 2, 'route' => 'master.akun',       'title' => 'Master Akun',       'desc' => 'Chart of accounts (tkacc_accountses)',                          'roles' => ['admin'], 'badge' => 'Akuntansi']),
+            $entry(['group' => 'Master Akuntansi', 'groupOrder' => 4, 'order' => 3, 'route' => 'master.tucico',     'title' => 'Master TUCICO',     'desc' => 'Pos kas transit non-transaksi (setoran/ambil kas)',             'roles' => ['admin'], 'badge' => 'Akuntansi']),
+
             // ── Master Tarif Jasa ─────────────────────────────────────
             $entry(['group' => 'Master Tarif', 'groupOrder' => 2, 'order' => 1, 'route' => 'master.jasa-dokter',    'title' => 'Master Jasa Dokter',    'desc' => 'Tarif jasa dokter untuk billing',                'roles' => ['admin'], 'badge' => 'Tarif']),
             $entry(['group' => 'Master Tarif', 'groupOrder' => 2, 'order' => 2, 'route' => 'master.jasa-karyawan',  'title' => 'Master Jasa Karyawan',  'desc' => 'Tarif jasa karyawan (admin/RM/kasir)',           'roles' => ['admin'], 'badge' => 'Tarif']),

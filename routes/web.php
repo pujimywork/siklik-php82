@@ -53,6 +53,15 @@ Route::middleware(['auth'])->group(function () {
     Route::livewire('/master/cara-bayar', 'pages::master.master-cara-bayar.master-cara-bayar')
         ->name('master.cara-bayar');
 
+    Route::livewire('/master/group-akun', 'pages::master.master-group-akun.master-group-akun')
+        ->name('master.group-akun');
+
+    Route::livewire('/master/akun', 'pages::master.master-akun.master-akun')
+        ->name('master.akun');
+
+    Route::livewire('/master/tucico', 'pages::master.master-tucico.master-tucico')
+        ->name('master.tucico');
+
     Route::livewire('/master/cara-keluar', 'pages::master.master-cara-keluar.master-cara-keluar')
         ->name('master.cara-keluar');
 

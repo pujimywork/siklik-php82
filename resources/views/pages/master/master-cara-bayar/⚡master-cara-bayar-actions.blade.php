@@ -231,12 +231,13 @@ new class extends Component {
                                 <x-input-error :messages="$errors->get('form.active_status')" class="mt-1" />
                             </div>
                             <div>
-                                {{-- LOV akun cash-in: cara bayar dipetakan ke 1 akun
-                                     (mis. Tunai → kas, Transfer → bank rekening) --}}
-                                <livewire:lov.akun-ci.lov-akun-ci
+                                {{-- LOV akun (kas only) — cara bayar dipetakan ke akun kas
+                                     (Tunai → kas, Transfer → bank rekening, BPJS → receivable). --}}
+                                <livewire:lov.akun.lov-akun
                                     target="cb-acc"
                                     label="Akun (mapping)"
-                                    placeholder="Cari akun..."
+                                    placeholder="Cari akun kas..."
+                                    :kasOnly="true"
                                     :initialAccId="$form['acc_id'] ?? null"
                                     wire:key="lov-akun-cb-{{ $originalId ?? 'new' }}-{{ $renderVersions['modal'] ?? 0 }}" />
                                 <x-input-error :messages="$errors->get('form.acc_id')" class="mt-1" />

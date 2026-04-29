@@ -51,6 +51,11 @@
             ['label' => 'Provinsi (Apotek)',      'route' => 'master.prov-toko'],
             ['label' => 'Kota (Apotek)',          'route' => 'master.kota-toko'],
         ],
+        'Master Akuntansi' => [
+            ['label' => 'Master Group Akun',      'route' => 'master.group-akun'],
+            ['label' => 'Master Akun',            'route' => 'master.akun'],
+            ['label' => 'Master TUCICO',          'route' => 'master.tucico'],
+        ],
         'Master Wilayah Pasien' => [
             ['label' => 'Master Provinsi',  'route' => 'master.provinsi'],
             ['label' => 'Master Kabupaten', 'route' => 'master.kabupaten'],
