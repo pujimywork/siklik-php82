@@ -70,6 +70,7 @@
             ['label' => 'Antrian Apotek',     'route' => 'transaksi.apotek'],
             ['label' => 'Laboratorium',       'route' => 'transaksi.penunjang.laborat'],
             ['label' => 'Penerimaan Medis',   'route' => 'gudang.penerimaan-medis'],
+            ['label' => 'Kartu Stock',        'route' => 'gudang.kartu-stock'],
         ],
         'Keuangan' => [
             ['label' => 'Penerimaan Kas TU',     'route' => 'keuangan.penerimaan-kas-tu'],

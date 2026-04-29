@@ -185,6 +185,12 @@ Route::middleware(['auth'])->group(function () {
         ->name('gudang.penerimaan-medis');
 
     // ===========================================
+    // GUDANG - KARTU STOCK
+    // ===========================================
+    Route::livewire('/gudang/kartu-stock', 'pages::transaksi.gudang.kartu-stock.kartu-stock')
+        ->name('gudang.kartu-stock');
+
+    // ===========================================
     // TRANSAKSI PENUNJANG - LABORATORIUM
     // ===========================================
     Route::livewire('/transaksi/penunjang/laborat', 'pages::transaksi.penunjang.laborat.daftar-laborat')

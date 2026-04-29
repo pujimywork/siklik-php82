@@ -84,6 +84,7 @@ new class extends Component {
 
             // ── Gudang ────────────────────────────────────────────────
             $entry(['group' => 'Gudang', 'groupOrder' => 9, 'order' => 1, 'route' => 'gudang.penerimaan-medis', 'title' => 'Obat dari PBF', 'desc' => 'Penerimaan obat dari PBF / Supplier (Gudang Medis)', 'roles' => ['admin', 'apotek'], 'badge' => 'RCV']),
+            $entry(['group' => 'Gudang', 'groupOrder' => 9, 'order' => 2, 'route' => 'gudang.kartu-stock',     'title' => 'Kartu Stock',  'desc' => 'Riwayat mutasi stok per produk per tahun',         'roles' => ['admin', 'apotek'], 'badge' => 'STK']),
 
             // ── Keuangan ──────────────────────────────────────────────
             $entry(['group' => 'Keuangan', 'groupOrder' => 10, 'order' => 1, 'route' => 'keuangan.penerimaan-kas-tu',     'title' => 'Penerimaan Kas TU',      'desc' => 'Catat penerimaan kas di luar transaksi pelayanan',          'roles' => ['admin', 'tu'], 'badge' => 'CI']),
