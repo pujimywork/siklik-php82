@@ -167,6 +167,12 @@ Route::middleware(['auth'])->group(function () {
         ->name('keuangan.pengeluaran-kas-tu');
 
     // ===========================================
+    // KEUANGAN - PEMBAYARAN PIUTANG RJ
+    // ===========================================
+    Route::livewire('/keuangan/pembayaran-piutang-rj', 'pages::transaksi.keuangan.pembayaran-piutang-rj.pembayaran-piutang-rj')
+        ->name('keuangan.pembayaran-piutang-rj');
+
+    // ===========================================
     // GUDANG - PENERIMAAN MEDIS
     // ===========================================
     Route::livewire('/gudang/penerimaan-medis', 'pages::transaksi.gudang.penerimaan-medis.penerimaan-medis')

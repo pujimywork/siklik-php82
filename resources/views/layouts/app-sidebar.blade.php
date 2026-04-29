@@ -72,8 +72,9 @@
             ['label' => 'Penerimaan Medis',   'route' => 'gudang.penerimaan-medis'],
         ],
         'Keuangan' => [
-            ['label' => 'Penerimaan Kas TU',  'route' => 'keuangan.penerimaan-kas-tu'],
-            ['label' => 'Pengeluaran Kas TU', 'route' => 'keuangan.pengeluaran-kas-tu'],
+            ['label' => 'Penerimaan Kas TU',     'route' => 'keuangan.penerimaan-kas-tu'],
+            ['label' => 'Pengeluaran Kas TU',    'route' => 'keuangan.pengeluaran-kas-tu'],
+            ['label' => 'Pembayaran Piutang RJ', 'route' => 'keuangan.pembayaran-piutang-rj'],
         ],
         'Database Monitor' => [
             ['label' => 'Monitoring Dashboard', 'route' => 'database-monitor.monitoring-dashboard'],

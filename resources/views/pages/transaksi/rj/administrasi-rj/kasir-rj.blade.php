@@ -238,16 +238,26 @@ new class extends Component {
 
                 $rjHdr = DB::table('rstxn_rjhdrs')->where('rj_no', $this->rjNo)->first();
 
+                // Shift & rjc_date diambil dari WAKTU BAYAR (bukan rj_date).
+                // Use case: pasien pagi periksa, sore bayar — shift ngikut jam bayar.
+                $now = \Carbon\Carbon::now();
+                $shift = DB::table('rstxn_shiftctls')
+                    ->select('shift')
+                    ->whereNotNull('shift_start')
+                    ->whereNotNull('shift_end')
+                    ->whereRaw('? BETWEEN shift_start AND shift_end', [$now->format('H:i:s')])
+                    ->value('shift') ?? ($rjHdr->shift ?? 'A');
+
                 // RSTXN_RJCASHINS schema: rjc_dtl, rj_no, rjc_date, rjc_nominal, rjc_desc,
                 //                          cb_id, kasir_id, shift, g_status.
                 $cashRow = [
                     'rjc_dtl'  => DB::raw('rjcdtl_seq.nextval'),
-                    'rjc_date' => $rjHdr->rj_date,
+                    'rjc_date' => $now,
                     'rjc_desc' => $rjHdr->reg_no . ' / ' . $rjHdr->rj_no,
                     'cb_id'    => $this->cbId,
                     'kasir_id' => $kasirId,
                     'rj_no'    => $this->rjNo,
-                    'shift'    => $rjHdr->shift,
+                    'shift'    => $shift,
                 ];
 
                 if ($bayar < $dspTotalAll) {
@@ -273,7 +283,7 @@ new class extends Component {
                         ->where('rj_no', $this->rjNo)
                         ->update([
                             'txn_status' => 'L',
-                            'pay_date'   => $rjHdr->rj_date,
+                            'pay_date'   => $now,
                             'cb_id'      => $this->cbId,
                             'rj_diskon'  => $this->rjDiskon,
                             'rj_status'  => 'L',
