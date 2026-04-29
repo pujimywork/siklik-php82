@@ -45,48 +45,46 @@
         @php
             $alergi = $dataDaftarPoliRJ['anamnesa']['alergi'] ?? [];
             $alergiBlocks = [
-                ['title' => 'Alergi Makanan', 'jenis' => '01', 'method' => 'loadAlergiMakanan',
-                 'options' => $alergiMakananOptions, 'kd' => 'alergiMakan', 'desc' => 'alergiMakanDesc'],
-                ['title' => 'Alergi Udara',   'jenis' => '02', 'method' => 'loadAlergiUdara',
-                 'options' => $alergiUdaraOptions,   'kd' => 'alergiUdara', 'desc' => 'alergiUdaraDesc'],
-                ['title' => 'Alergi Obat',    'jenis' => '03', 'method' => 'loadAlergiObat',
-                 'options' => $alergiObatOptions,    'kd' => 'alergiObat',  'desc' => 'alergiObatDesc'],
+                ['title' => 'Alergi Makanan (BPJS)', 'jenis' => '01', 'method' => 'loadAlergiMakanan',
+                 'options' => $alergiMakananOptions, 'kd' => 'alergiMakan'],
+                ['title' => 'Alergi Udara (BPJS)',   'jenis' => '02', 'method' => 'loadAlergiUdara',
+                 'options' => $alergiUdaraOptions,   'kd' => 'alergiUdara'],
+                ['title' => 'Alergi Obat (BPJS)',    'jenis' => '03', 'method' => 'loadAlergiObat',
+                 'options' => $alergiObatOptions,    'kd' => 'alergiObat'],
             ];
         @endphp
 
-        <div class="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-3">
+        <div class="grid grid-cols-1 gap-4 pt-2">
             @foreach ($alergiBlocks as $blk)
                 <div>
-                    <x-input-label :value="$blk['title'] . ' (BPJS)'" />
+                    <x-input-label :value="$blk['title']" />
                     <div class="flex gap-1 mt-1">
-                        <x-text-input
-                            :value="($alergi[$blk['kd']] ?? '00') . ' / ' . ($alergi[$blk['desc']] ?? 'Tidak Ada')"
-                            disabled class="flex-1 bg-gray-50 dark:bg-gray-800" />
+                        <x-select-input
+                            :value="$alergi[$blk['kd']] ?? '00'"
+                            wire:change="changeAlergi('{{ $blk['jenis'] }}', $event.target.value)"
+                            :disabled="$isFormLocked"
+                            class="flex-1">
+                            @if (empty($blk['options']))
+                                <option value="{{ $alergi[$blk['kd']] ?? '00' }}">
+                                    {{ ($alergi[$blk['kd']] ?? '00') }} — {{ $alergi[$blk['kd'] . 'Desc'] ?? 'Tidak Ada' }}
+                                </option>
+                            @else
+                                @foreach ($blk['options'] as $opt)
+                                    <option value="{{ $opt['kdAlergi'] }}">
+                                        {{ $opt['kdAlergi'] }} — {{ $opt['nmAlergi'] }}
+                                    </option>
+                                @endforeach
+                            @endif
+                        </x-select-input>
                         <x-secondary-button type="button"
                             wire:click="{{ $blk['method'] }}" wire:loading.attr="disabled"
                             wire:target="{{ $blk['method'] }}" :disabled="$isFormLocked"
-                            class="px-2 whitespace-nowrap">
-                            <span wire:loading.remove wire:target="{{ $blk['method'] }}">Cari BPJS</span>
+                            class="px-2 whitespace-nowrap"
+                            title="Refresh dari BPJS PCare (cache lokal)">
+                            <span wire:loading.remove wire:target="{{ $blk['method'] }}">⟳</span>
                             <span wire:loading wire:target="{{ $blk['method'] }}">...</span>
                         </x-secondary-button>
                     </div>
-
-                    @if (!empty($blk['options']))
-                        <div class="z-10 mt-1 overflow-hidden bg-white border border-gray-200 shadow rounded-xl dark:bg-gray-900 dark:border-gray-700">
-                            <ul class="overflow-y-auto divide-y divide-gray-100 max-h-48 dark:divide-gray-800">
-                                @foreach ($blk['options'] as $opt)
-                                    <li>
-                                        <button type="button"
-                                            wire:click="selectAlergi('{{ $blk['jenis'] }}', '{{ $opt['kdAlergi'] }}', @js($opt['nmAlergi']))"
-                                            class="w-full px-3 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-800">
-                                            <span class="font-mono text-xs text-gray-500">{{ $opt['kdAlergi'] }}</span>
-                                            <span class="ml-2">{{ $opt['nmAlergi'] }}</span>
-                                        </button>
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
                 </div>
             @endforeach
         </div>

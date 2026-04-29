@@ -70,6 +70,9 @@ new class extends Component {
             $this->dataDaftarPoliRJ['anamnesa']['riwayatPenyakitDahulu']['riwayatPenyakitDahulu'] = $pasienData['pasien']['riwayatPenyakitDahulu'];
         }
 
+        // Pre-load 3 alergi options dari cache ref_bpjs_table (silent).
+        $this->preloadAlergiOptions();
+
         // 🔥 INCREMENT: Refresh seluruh modal anamnesa
         $this->incrementVersion('modal-anamnesa-rj');
 
@@ -479,6 +482,53 @@ new class extends Component {
     public function loadAlergiMakanan(): void { $this->loadAlergi('01'); }
     public function loadAlergiUdara(): void   { $this->loadAlergi('02'); }
     public function loadAlergiObat(): void    { $this->loadAlergi('03'); }
+
+    /** Auto-load 3 alergi options (silent — dipanggil saat openAnamnesa). */
+    private function preloadAlergiOptions(): void
+    {
+        foreach (['01', '02', '03'] as $jenis) {
+            try {
+                $refKey = ['01' => 'Alergi Makanan', '02' => 'Alergi Udara', '03' => 'Alergi Obat'][$jenis];
+                $list = $this->loadRefBpjsCache($refKey);
+                if ($list === null) continue; // cache kosong → tetap kosong, user bisa klik "Cari BPJS" manual
+
+                $opts = collect($list)
+                    ->map(fn($r) => [
+                        'kdAlergi' => (string) ($r['kdAlergi'] ?? $r['kode'] ?? ''),
+                        'nmAlergi' => (string) ($r['nmAlergi'] ?? $r['nama'] ?? ''),
+                    ])
+                    ->filter(fn($o) => $o['kdAlergi'] !== '')
+                    ->values()
+                    ->all();
+                array_unshift($opts, ['kdAlergi' => '00', 'nmAlergi' => 'Tidak Ada']);
+
+                match ($jenis) {
+                    '01' => $this->alergiMakananOptions = $opts,
+                    '02' => $this->alergiUdaraOptions   = $opts,
+                    '03' => $this->alergiObatOptions    = $opts,
+                };
+            } catch (\Throwable $e) {
+                \Log::warning('preloadAlergiOptions cache miss', ['jenis' => $jenis, 'err' => $e->getMessage()]);
+            }
+        }
+    }
+
+    /**
+     * Wire dari select alergi → simpan kode + lookup desc dari options array.
+     * jenis: '01'/'02'/'03'.
+     */
+    public function changeAlergi(string $jenis, string $kdAlergi): void
+    {
+        $opts = match ($jenis) {
+            '01' => $this->alergiMakananOptions,
+            '02' => $this->alergiUdaraOptions,
+            '03' => $this->alergiObatOptions,
+        };
+        $found = collect($opts)->firstWhere('kdAlergi', $kdAlergi);
+        $desc = $found['nmAlergi'] ?? 'Tidak Ada';
+
+        $this->selectAlergi($jenis, $kdAlergi, $desc);
+    }
 
     private function loadAlergi(string $jenis): void
     {
