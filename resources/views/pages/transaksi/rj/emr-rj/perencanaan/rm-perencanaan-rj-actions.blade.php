@@ -100,13 +100,6 @@ new class extends Component {
                 'terapi' => '',
             ],
 
-            // 'rawatInapTab' => 'Rawat Inap',
-            // 'rawatInap' => [
-            //     'noRef' => '',
-            //     'tanggal' => '', //dd/mm/yyyy
-            //     'keterangan' => '',
-            // ],
-
             // 'dischargePlanningTab' => 'Discharge Planning', // TIDAK DIPAKAI
             // 'dischargePlanning' => [                         // TIDAK DIPAKAI
             //     'pelayananBerkelanjutan' => [
@@ -361,7 +354,6 @@ new class extends Component {
         return [
             'dataDaftarPoliRJ.perencanaan.pengkajianMedis.waktuPemeriksaan' => 'nullable|date_format:d/m/Y H:i:s',
             'dataDaftarPoliRJ.perencanaan.pengkajianMedis.selesaiPemeriksaan' => 'nullable|date_format:d/m/Y H:i:s',
-            'dataDaftarPoliRJ.perencanaan.rawatInap.tanggal' => 'nullable|date_format:d/m/Y',
         ];
     }
 
@@ -370,7 +362,6 @@ new class extends Component {
         return [
             'dataDaftarPoliRJ.perencanaan.pengkajianMedis.waktuPemeriksaan.date_format' => ':attribute harus dalam format dd/mm/yyyy hh:mi:ss',
             'dataDaftarPoliRJ.perencanaan.pengkajianMedis.selesaiPemeriksaan.date_format' => ':attribute harus dalam format dd/mm/yyyy hh:mi:ss',
-            'dataDaftarPoliRJ.perencanaan.rawatInap.tanggal.date_format' => ':attribute harus dalam format dd/mm/yyyy',
         ];
     }
 
@@ -379,7 +370,6 @@ new class extends Component {
         return [
             'dataDaftarPoliRJ.perencanaan.pengkajianMedis.waktuPemeriksaan' => 'Waktu Pemeriksaan',
             'dataDaftarPoliRJ.perencanaan.pengkajianMedis.selesaiPemeriksaan' => 'Selesai Pemeriksaan',
-            'dataDaftarPoliRJ.perencanaan.rawatInap.tanggal' => 'Tanggal Rawat Inap',
         ];
     }
 
@@ -465,17 +455,6 @@ new class extends Component {
                                         </label>
                                     </li> --}}
 
-                                    {{-- RAWAT INAP TAB --}}
-                                    {{-- <li class="mr-2">
-                                        <label
-                                            class="inline-block px-4 py-2 border-b-2 border-transparent rounded-t-lg cursor-pointer hover:text-gray-600 hover:border-gray-300"
-                                            :class="activeTab === '{{ $dataDaftarPoliRJ['perencanaan']['rawatInapTab'] ?? 'Rawat Inap' }}'
-                                                ? 'text-primary border-primary bg-gray-100' : ''"
-                                            @click="activeTab = '{{ $dataDaftarPoliRJ['perencanaan']['rawatInapTab'] ?? 'Rawat Inap' }}'">
-                                            {{ $dataDaftarPoliRJ['perencanaan']['rawatInapTab'] ?? 'Rawat Inap' }}
-                                        </label>
-                                    </li> --}}
-
                                     {{-- DISCHARGE PLANNING TAB --}}
                                     {{-- <li class="mr-2">
                                         <label
@@ -510,14 +489,6 @@ new class extends Component {
                                     x-show.transition.in.opacity.duration.600="activeTab === '{{ $dataDaftarPoliRJ['perencanaan']['terapiTab'] ?? 'Terapi' }}'">
                                     @include('pages.transaksi.rj.emr-rj.perencanaan.tabs.terapi-tab')
                                 </div> --}}
-
-                                {{-- RAWAT INAP TAB --}}
-                                {{-- @if (isset($dataDaftarPoliRJ['perencanaan']['rawatInapTab']))
-                                    <div class="w-full"
-                                        x-show.transition.in.opacity.duration.600="activeTab === '{{ $dataDaftarPoliRJ['perencanaan']['rawatInapTab'] ?? 'Rawat Inap' }}'">
-                                        @include('pages.transaksi.rj.emr-rj.perencanaan.tabs.rawat-inap-tab')
-                                    </div>
-                                @endif --}}
 
                                 {{-- DISCHARGE PLANNING TAB --}}
                                 {{-- @if (isset($dataDaftarPoliRJ['perencanaan']['dischargePlanningTab']))
