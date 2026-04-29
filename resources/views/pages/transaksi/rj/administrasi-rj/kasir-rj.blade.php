@@ -825,10 +825,12 @@ new class extends Component {
                     <x-input-error :messages="$errors->get('cbId')" class="mt-1" />
                 </div>
 
-                {{-- Input Bayar --}}
+                {{-- Input Bayar — debounce 400ms supaya ngetik cepat nggak
+                     kepotong AJAX roundtrip Livewire (issue: 25000 → 200). --}}
                 <div class="w-52">
                     <x-input-label value="Nominal Bayar (Rp)" class="mb-1" />
-                    <x-text-input type="number" wire:model.live="bayar" placeholder="0"
+                    <x-text-input type="number" wire:model.live.debounce.400ms="bayar"
+                        placeholder="0"
                         class="w-full font-mono text-right" min="1" x-ref="inputBayar"
                         x-on:keyup.enter="$wire.postTransaksi()" />
                     <x-input-error :messages="$errors->get('bayar')" class="mt-1" />
