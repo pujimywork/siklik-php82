@@ -56,7 +56,7 @@
     {{-- ISI SURAT --}}
     <p class="mb-3 text-[12px] leading-relaxed">
         Yang bertanda tangan di bawah ini, dokter pemeriksa di
-        <strong>Rumah Sakit Islam Madinah Tulungagung</strong>,
+        <strong>Klinik Madinah Pratama</strong>,
         menerangkan bahwa pasien tersebut di atas telah diperiksa pada hari ini dan
         dinyatakan <strong>SAKIT</strong>, sehingga memerlukan istirahat selama:
         <span class="pb-0.5 text-[20px] font-bold border-b-2 border-black">

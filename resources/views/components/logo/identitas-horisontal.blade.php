@@ -1,11 +1,11 @@
 {{-- resources/views/components/logo/identitas-horisontal.blade.php --}}
 {{-- Pemakaian: <x-logo.identitas-horisontal /> atau <x-logo.identitas-horisontal :showGaris="false" /> --}}
 @props([
-    'namaRs' => 'Rumah Sakit Islam Madinah',
-    'alamat' => 'Jl. Jati Wayang, Lk. 2, Ngunut, Kec. Ngunut,<br>Kabupaten Tulungagung, Jawa Timur 66292',
-    'telp' => '(0355) 396055',
-    'fax' => '(0355) 396824',
-    'website' => 'www.rsimadinah.com',
+    'namaRs' => 'Klinik Madinah Pratama',
+    'alamat' => 'Jl. Raya Demuk-Kalangan, Kalangan, Kec. Ngunut,<br>Kabupaten Tulungagung, Jawa Timur 66292',
+    'telp' => '',
+    'fax' => '',
+    'website' => '',
     'showGaris' => true,
 ])
 
@@ -19,8 +19,15 @@
             <td class="align-middle text-left text-[9.5px] leading-snug text-gray-600">
                 <div class="font-bold text-[13px] text-gray-900 mb-0.5">{{ $namaRs }}</div>
                 <div>{!! $alamat !!}</div>
-                <div>Telp. {{ $telp }}&ensp;Fax. {{ $fax }}</div>
-                <div>{{ $website }}</div>
+                @if (!empty($telp) || !empty($fax))
+                    <div>
+                        @if (!empty($telp)) Telp. {{ $telp }} @endif
+                        @if (!empty($fax)) &ensp;Fax. {{ $fax }} @endif
+                    </div>
+                @endif
+                @if (!empty($website))
+                    <div>{{ $website }}</div>
+                @endif
             </td>
         </tr>
     </table>

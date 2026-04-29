@@ -1,11 +1,11 @@
 {{-- resources/views/components/logo/identitas.blade.php --}}
 {{-- Pemakaian: <x-logo.identitas /> atau <x-logo.identitas :showGaris="false" /> --}}
 @props([
-    'namaRs' => 'Rumah Sakit Islam Madinah',
-    'alamat' => 'Jl. Jati Wayang, Lk. 2, Ngunut, Kec. Ngunut,<br>Kabupaten Tulungagung, Jawa Timur 66292',
-    'telp' => '(0355) 396055',
-    'fax' => '(0355) 396824',
-    'website' => 'www.rsimadinah.com',
+    'namaRs' => 'Klinik Madinah Pratama',
+    'alamat' => 'Jl. Raya Demuk-Kalangan, Kalangan, Kec. Ngunut,<br>Kabupaten Tulungagung, Jawa Timur 66292',
+    'telp' => '',
+    'fax' => '',
+    'website' => '',
     'showGaris' => true,
 ])
 
@@ -21,8 +21,15 @@
             <div style="font-size:9.5px; line-height:1.55; color:#333;">
                 <div style="font-weight:bold; font-size:11px; color:#111;">{{ $namaRs }}</div>
                 <div>{!! $alamat !!}</div>
-                <div>Telp. {{ $telp }}&nbsp;&nbsp;Fax. {{ $fax }}</div>
-                <div>{{ $website }}</div>
+                @if (!empty($telp) || !empty($fax))
+                    <div>
+                        @if (!empty($telp)) Telp. {{ $telp }} @endif
+                        @if (!empty($fax)) &nbsp;&nbsp;Fax. {{ $fax }} @endif
+                    </div>
+                @endif
+                @if (!empty($website))
+                    <div>{{ $website }}</div>
+                @endif
             </div>
         </td>
     </tr>

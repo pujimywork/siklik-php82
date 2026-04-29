@@ -11,7 +11,7 @@
                     style="height:6mm; width:auto;">
             </td>
             <td class="text-left align-middle">
-                <div class="font-bold text-gray-900" style="font-size:7pt;">RUMAH SAKIT ISLAM MADINAH</div>
+                <div class="font-bold text-gray-900" style="font-size:7pt;">KLINIK MADINAH PRATAMA</div>
             </td>
         </tr>
     </table>

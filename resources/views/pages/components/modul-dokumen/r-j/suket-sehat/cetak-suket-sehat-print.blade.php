@@ -56,7 +56,7 @@
     {{-- ISI SURAT --}}
     <p class="mb-3 text-[12px] leading-relaxed">
         Yang bertanda tangan di bawah ini, dokter pemeriksa di
-        <strong>Rumah Sakit Islam Madinah Tulungagung</strong>,
+        <strong>Klinik Madinah Pratama</strong>,
         menerangkan bahwa pasien tersebut di atas telah diperiksa pada hari ini dan
         dinyatakan dalam keadaan <strong>SEHAT</strong>.
     </p>
