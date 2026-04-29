@@ -11,9 +11,12 @@
                   wireClick="toggleActive('{{ $row->emp_id }}')">Aktif</x-toggle>
 
     Catatan:
-      - Mendukung nested array (dataDaftarXxx.field) tanpa @entangle
-      - Nilai awal diambil via $current (jika diisi) atau data_get($__livewire, $wireModel)
-      - Toggle via $wire.set() (Mode 1) atau $wire.{method}(...) (Mode 2)
+      - Visual driven by server-rendered class — Alpine cuma jadi click handler.
+        Cegah bug "klik 2x kembali tercentang" akibat Alpine optimistic flip vs
+        Livewire morph re-render yang nggak sync.
+      - Mendukung nested array (dataDaftarXxx.field) tanpa @entangle.
+      - Nilai awal diambil via $current (jika diisi) atau data_get($__livewire, $wireModel).
+      - Toggle via $wire.set() (Mode 1) atau $wire.{method}(...) (Mode 2).
 --}}
 
 @props([
@@ -21,15 +24,13 @@
     'falseValue' => 'N',
     'label' => null,
     'disabled' => false,
-    'current' => null,    // override initial value (untuk Mode 2 / per-row)
-    'wireClick' => null,  // alt wire:model — panggil method server saat klik (Mode 2)
+    'current' => null,
+    'wireClick' => null,
 ])
 
 @php
-    // Ambil nama model dari wire:model
     $wireModel = $attributes->whereStartsWith('wire:model')->first();
 
-    // Initial value: prioritas $current → wire:model lookup → falseValue
     $currentValue = null;
     if ($current !== null) {
         $currentValue = $current;
@@ -41,47 +42,41 @@
     }
     $currentValue ??= $falseValue;
 
-    // Strip wire:model — dihandle sendiri via $wire.set()
+    // Server-side: tentukan ON/OFF di Blade, bukan di Alpine.
+    $isOn = $currentValue == $trueValue;
+    $nextValue = $isOn ? $falseValue : $trueValue;
+
     $attrs = $attributes->whereDoesntStartWith('wire:model');
+
+    // Class untuk track + thumb berdasarkan state server.
+    $trackClass = match (true) {
+        $isOn && $disabled => 'bg-gray-400',
+        $isOn => 'bg-brand',
+        !$isOn && $disabled => 'bg-gray-200',
+        default => 'bg-gray-300',
+    };
+    $thumbClass = $isOn ? 'translate-x-6 ml-1' : 'translate-x-1';
 @endphp
 
 <div x-data="{
-    value: @js($currentValue),
-    trueValue: @js($trueValue),
-    falseValue: @js($falseValue),
     disabled: @js($disabled),
     toggle() {
         if (this.disabled) return;
-        this.value = (this.value == this.trueValue) ? this.falseValue : this.trueValue;
-        @if ($wireModel) $wire.set('{{ $wireModel }}', this.value); @endif
+        @if ($wireModel) $wire.set('{{ $wireModel }}', @js($nextValue)); @endif
         @if ($wireClick) $wire.{{ $wireClick }}; @endif
     }
-}" class="flex items-center space-x-2"
-    :class="{
-        'cursor-pointer': !disabled,
-        'cursor-not-allowed opacity-60': disabled
-    }"
-    @click="toggle" {{ $attrs }}>
-    <div class="h-6 transition rounded-full w-11"
-        :class="{
-            'bg-brand': value == trueValue && !disabled,
-            'bg-gray-400': value == trueValue && disabled,
-            'bg-gray-300': value != trueValue && !disabled,
-            'bg-gray-200': value != trueValue && disabled
-        }">
-        <div class="w-4 h-4 mt-1 transition transform bg-white rounded-full shadow"
-            :class="{
-                'translate-x-6 ml-1': value == trueValue,
-                'translate-x-1': value != trueValue
-            }">
-        </div>
+}"
+    @click="toggle"
+    {{ $attrs->merge([
+        'class' => 'flex items-center space-x-2 ' . ($disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'),
+    ]) }}>
+    <div class="h-6 transition rounded-full w-11 {{ $trackClass }}">
+        <div class="w-4 h-4 mt-1 transition transform bg-white rounded-full shadow {{ $thumbClass }}"></div>
     </div>
 
     @if ($label)
-        <span class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            :class="{ 'opacity-60': disabled }">{{ $label }}</span>
-    @else
-        <span class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            :class="{ 'opacity-60': disabled }">{{ $slot }}</span>
+        <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 {{ $disabled ? 'opacity-60' : '' }}">{{ $label }}</span>
+    @elseif (trim((string) $slot) !== '')
+        <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 {{ $disabled ? 'opacity-60' : '' }}">{{ $slot }}</span>
     @endif
 </div>

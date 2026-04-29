@@ -45,8 +45,9 @@ new class extends Component {
     #[On('piutang-rj.grouped')]
     public function refreshAfterGrouped(): void
     {
-        // computed otomatis re-compute karena state regNo tetap.
-        // Tapi paksa Livewire re-render.
+        // Auto-clear pasien setelah pelunasan sukses → user balik ke fresh state.
+        $this->reset(['regNo', 'pasien']);
+        unset($this->rjList, $this->summary);
     }
 
     /* ── List rj_no piutang utk pasien terpilih ── */
@@ -243,13 +244,25 @@ new class extends Component {
 
             {{-- 1) FORM PILIH PASIEN --}}
             <div class="bg-white border border-gray-200 shadow-sm rounded-2xl dark:border-gray-700 dark:bg-gray-900">
-                <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-                    <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
-                        1. Pilih Pasien
-                    </h3>
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        Cari berdasarkan No RM / Nama / NIK / No BPJS / Alamat
-                    </p>
+                <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <div>
+                        <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
+                            1. Pilih Pasien
+                        </h3>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Cari berdasarkan No RM / Nama / NIK / No BPJS / Alamat
+                        </p>
+                    </div>
+                    @if ($regNo)
+                        <x-secondary-button type="button" wire:click="clearPasien"
+                            title="Reset pilihan pasien untuk transaksi baru">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Transaksi Baru
+                        </x-secondary-button>
+                    @endif
                 </div>
                 <div class="px-5 py-5">
                     <livewire:lov.pasien.lov-pasien

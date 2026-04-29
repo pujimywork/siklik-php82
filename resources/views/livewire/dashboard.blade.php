@@ -89,6 +89,7 @@ new class extends Component {
             $entry(['group' => 'Keuangan', 'groupOrder' => 10, 'order' => 1, 'route' => 'keuangan.penerimaan-kas-tu',     'title' => 'Penerimaan Kas TU',      'desc' => 'Catat penerimaan kas di luar transaksi pelayanan',          'roles' => ['admin', 'tu'], 'badge' => 'CI']),
             $entry(['group' => 'Keuangan', 'groupOrder' => 10, 'order' => 2, 'route' => 'keuangan.pengeluaran-kas-tu',    'title' => 'Pengeluaran Kas TU',     'desc' => 'Catat pengeluaran kas di luar transaksi pelayanan',         'roles' => ['admin', 'tu'], 'badge' => 'CO']),
             $entry(['group' => 'Keuangan', 'groupOrder' => 10, 'order' => 3, 'route' => 'keuangan.pembayaran-piutang-rj', 'title' => 'Pembayaran Piutang RJ', 'desc' => 'Pelunasan tagihan rawat jalan pasien yang masih piutang',   'roles' => ['admin', 'tu', 'kasir'], 'badge' => 'PYR']),
+            $entry(['group' => 'Keuangan', 'groupOrder' => 10, 'order' => 4, 'route' => 'keuangan.pembayaran-hutang-pbf', 'title' => 'Pembayaran Hutang PBF', 'desc' => 'Pelunasan / angsuran hutang ke supplier obat (PBF)',         'roles' => ['admin', 'tu'], 'badge' => 'HTG']),
 
             // ── Sistem ────────────────────────────────────────────────
             $entry(['group' => 'Sistem', 'groupOrder' => 11, 'order' => 1, 'route' => 'database-monitor.monitoring-dashboard',     'title' => 'Oracle Session Monitor', 'desc' => 'Locks, long-running SQL & kill session',          'roles' => ['admin'], 'badge' => 'DB']),

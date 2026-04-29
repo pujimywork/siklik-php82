@@ -31,8 +31,9 @@ new class extends Component {
     public bool $readonly = false;
 
     /**
-     * Filter jenis supplier
-     * 'all', 'medis', 'nonmedis'
+     * Legacy prop (sirus) — diabaikan di siklik karena tabel tkmst_suppliers
+     * tidak punya kolom medis/nonmedis. Dipertahankan supaya pemanggil lama
+     * tidak rusak. Klinik pratama tidak membedakan jenis supplier.
      */
     public string $jenisSupplier = 'all';
 
@@ -42,20 +43,18 @@ new class extends Component {
             return;
         }
 
-        $row = DB::table('immst_suppliers')
-            ->select(['supp_id', 'supp_name', 'phone', 'address', 'medis', 'nonmedis'])
+        $row = DB::table('tkmst_suppliers')
+            ->select(['supp_id', 'supp_name', 'supp_phone1', 'supp_address'])
             ->where('supp_id', $this->initialSuppId)
-            ->where('active_record', '1')
+            ->where('active_status', '1')
             ->first();
 
         if ($row) {
             $this->selected = [
-                'supp_id' => (string) $row->supp_id,
+                'supp_id'   => (string) $row->supp_id,
                 'supp_name' => (string) ($row->supp_name ?? ''),
-                'phone' => (string) ($row->phone ?? ''),
-                'address' => (string) ($row->address ?? ''),
-                'medis' => (string) ($row->medis ?? '0'),
-                'nonmedis' => (string) ($row->nonmedis ?? '0'),
+                'phone'     => (string) ($row->supp_phone1 ?? ''),
+                'address'   => (string) ($row->supp_address ?? ''),
             ];
         }
     }
@@ -77,20 +76,18 @@ new class extends Component {
 
         // ===== 1) exact match by supp_id =====
         if (ctype_digit($keyword)) {
-            $exactRow = DB::table('immst_suppliers')
-                ->select(['supp_id', 'supp_name', 'phone', 'address', 'medis', 'nonmedis'])
-                ->where('active_record', '1')
+            $exactRow = DB::table('tkmst_suppliers')
+                ->select(['supp_id', 'supp_name', 'supp_phone1', 'supp_address'])
+                ->where('active_status', '1')
                 ->where('supp_id', $keyword)
                 ->first();
 
             if ($exactRow) {
                 $this->dispatchSelected([
-                    'supp_id' => (string) $exactRow->supp_id,
+                    'supp_id'   => (string) $exactRow->supp_id,
                     'supp_name' => (string) ($exactRow->supp_name ?? ''),
-                    'phone' => (string) ($exactRow->phone ?? ''),
-                    'address' => (string) ($exactRow->address ?? ''),
-                    'medis' => (string) ($exactRow->medis ?? '0'),
-                    'nonmedis' => (string) ($exactRow->nonmedis ?? '0'),
+                    'phone'     => (string) ($exactRow->supp_phone1 ?? ''),
+                    'address'   => (string) ($exactRow->supp_address ?? ''),
                 ]);
                 return;
             }
@@ -99,58 +96,33 @@ new class extends Component {
         // ===== 2) search by supp_name partial =====
         $upperKeyword = mb_strtoupper($keyword);
 
-        $query = DB::table('immst_suppliers')
-            ->select(['supp_id', 'supp_name', 'phone', 'address', 'medis', 'nonmedis'])
-            ->where('active_record', '1')
+        $rows = DB::table('tkmst_suppliers')
+            ->select(['supp_id', 'supp_name', 'supp_phone1', 'supp_address'])
+            ->where('active_status', '1')
             ->where(function ($q) use ($upperKeyword) {
                 $q->whereRaw("UPPER(supp_id) LIKE '%' || ? || '%'", [$upperKeyword])
                     ->orWhereRaw("UPPER(supp_name) LIKE '%' || ? || '%'", [$upperKeyword])
-                    ->orWhereRaw("UPPER(phone) LIKE '%' || ? || '%'", [$upperKeyword]);
-            });
-
-        // Filter jenis supplier jika dipilih
-        if ($this->jenisSupplier === 'medis') {
-            $query->where('medis', '1');
-        } elseif ($this->jenisSupplier === 'nonmedis') {
-            $query->where('nonmedis', '1');
-        }
-
-        $rows = $query->orderBy('supp_name')->limit(50)->get();
+                    ->orWhereRaw("UPPER(supp_phone1) LIKE '%' || ? || '%'", [$upperKeyword]);
+            })
+            ->orderBy('supp_name')
+            ->limit(50)
+            ->get();
 
         $this->options = array_map(function ($row) {
-            $suppId = (string) $row->supp_id;
+            $suppId   = (string) $row->supp_id;
             $suppName = (string) ($row->supp_name ?? '');
-            $phone = (string) ($row->phone ?? '');
-            $address = (string) ($row->address ?? '');
-            $isMedis = (string) ($row->medis ?? '0');
-            $isNonMedis = (string) ($row->nonmedis ?? '0');
+            $phone    = (string) ($row->supp_phone1 ?? '');
+            $address  = (string) ($row->supp_address ?? '');
 
-            // Tentukan jenis supplier
-            $jenis = '';
-            if ($isMedis === '1' && $isNonMedis === '1') {
-                $jenis = 'Medis & Non-Medis';
-            } elseif ($isMedis === '1') {
-                $jenis = 'Medis';
-            } elseif ($isNonMedis === '1') {
-                $jenis = 'Non-Medis';
-            }
-
-            // Potong alamat jika terlalu panjang
             $shortAddress = $address ? (strlen($address) > 60 ? substr($address, 0, 60) . '...' : $address) : '';
 
             return [
-                // payload
-                'supp_id' => $suppId,
-                'supp_name' => $suppName,
-                'phone' => $phone,
-                'address' => $address,
-                'medis' => $isMedis,
-                'nonmedis' => $isNonMedis,
-
-                // UI
-                'label' => $suppName ?: '-',
-                'hint' => "Kode: {$suppId} • Telp: {$phone}",
-                'jenis' => $jenis,
+                'supp_id'       => $suppId,
+                'supp_name'     => $suppName,
+                'phone'         => $phone,
+                'address'       => $address,
+                'label'         => $suppName ?: '-',
+                'hint'          => "Kode: {$suppId} • Telp: {$phone}",
                 'address_short' => $shortAddress,
             ];
         }, $rows->toArray());
@@ -215,12 +187,10 @@ new class extends Component {
         }
 
         $payload = [
-            'supp_id' => $this->options[$index]['supp_id'] ?? '',
+            'supp_id'   => $this->options[$index]['supp_id'] ?? '',
             'supp_name' => $this->options[$index]['supp_name'] ?? '',
-            'phone' => $this->options[$index]['phone'] ?? '',
-            'address' => $this->options[$index]['address'] ?? '',
-            'medis' => $this->options[$index]['medis'] ?? '0',
-            'nonmedis' => $this->options[$index]['nonmedis'] ?? '0',
+            'phone'     => $this->options[$index]['phone'] ?? '',
+            'address'   => $this->options[$index]['address'] ?? '',
         ];
 
         $this->dispatchSelected($payload);
@@ -266,15 +236,6 @@ new class extends Component {
 <x-lov.dropdown :id="$this->getId()" :isOpen="$isOpen" :selectedIndex="$selectedIndex" close="close">
     <x-input-label :value="$label" />
 
-    {{-- Filter jenis supplier --}}
-    @if ($selected === null && !$readonly)
-        <div class="grid grid-cols-3 gap-2 mt-1 mb-2">
-            <x-radio-button label="Semua" value="all" name="jenisSupplier" wire:model.live="jenisSupplier" />
-            <x-radio-button label="Medis" value="medis" name="jenisSupplier" wire:model.live="jenisSupplier" />
-            <x-radio-button label="Non-Medis" value="nonmedis" name="jenisSupplier" wire:model.live="jenisSupplier" />
-        </div>
-    @endif
-
     <div class="relative mt-1">
         @if ($selected === null)
             {{-- Mode cari --}}
@@ -315,16 +276,8 @@ new class extends Component {
                             x-ref="lovItem{{ $index }}">
                             <x-lov.item wire:click="choose({{ $index }})" :active="$index === $selectedIndex">
                                 <div class="flex flex-col">
-                                    <div class="flex items-center justify-between">
-                                        <div class="font-semibold text-gray-900 dark:text-gray-100">
-                                            {{ $option['label'] ?? '-' }}
-                                        </div>
-                                        @if (!empty($option['jenis']))
-                                            <span
-                                                class="px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full dark:bg-blue-900 dark:text-blue-300">
-                                                {{ $option['jenis'] }}
-                                            </span>
-                                        @endif
+                                    <div class="font-semibold text-gray-900 dark:text-gray-100">
+                                        {{ $option['label'] ?? '-' }}
                                     </div>
 
                                     @if (!empty($option['hint']))

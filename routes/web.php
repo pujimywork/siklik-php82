@@ -173,6 +173,12 @@ Route::middleware(['auth'])->group(function () {
         ->name('keuangan.pembayaran-piutang-rj');
 
     // ===========================================
+    // KEUANGAN - PEMBAYARAN HUTANG PBF
+    // ===========================================
+    Route::livewire('/keuangan/pembayaran-hutang-pbf', 'pages::transaksi.keuangan.pembayaran-hutang-pbf.pembayaran-hutang-pbf')
+        ->name('keuangan.pembayaran-hutang-pbf');
+
+    // ===========================================
     // GUDANG - PENERIMAAN MEDIS
     // ===========================================
     Route::livewire('/gudang/penerimaan-medis', 'pages::transaksi.gudang.penerimaan-medis.penerimaan-medis')

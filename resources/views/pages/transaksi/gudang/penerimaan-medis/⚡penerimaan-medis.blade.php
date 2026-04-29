@@ -76,6 +76,7 @@ new class extends Component {
             ->select([
                 'a.rcv_no',
                 DB::raw("to_char(a.rcv_date,'dd/mm/yyyy hh24:mi:ss') as rcv_date_display"),
+                DB::raw("to_char(a.due_date,'dd/mm/yyyy') as due_date_display"),
                 'a.rcv_desc',
                 'a.supp_id',
                 'b.supp_name',
@@ -237,7 +238,12 @@ new class extends Component {
                                     class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
                                     <td class="px-4 py-3 font-mono whitespace-nowrap">{{ $row->rcv_no }}</td>
                                     <td class="px-4 py-3 whitespace-nowrap">
-                                        {{ $row->rcv_date_display ?? '-' }}
+                                        <div>{{ $row->rcv_date_display ?? '-' }}</div>
+                                        @if (($row->rcv_status ?? '') === 'H' && !empty($row->due_date_display))
+                                            <div class="text-xs text-amber-700 dark:text-amber-400">
+                                                Tempo: {{ $row->due_date_display }}
+                                            </div>
+                                        @endif
                                     </td>
                                     <td class="px-4 py-3">
                                         <div class="font-semibold">{{ $row->supp_name ?? '-' }}</div>

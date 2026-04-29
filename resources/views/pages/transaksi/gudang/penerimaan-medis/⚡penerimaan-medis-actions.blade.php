@@ -16,6 +16,7 @@ new class extends Component {
     // ── Header ──
     public ?int $rcvNo = null;
     public ?string $rcvDate = null;
+    public ?string $dueDate = null; // jatuh tempo (TKTXN_RCVHDRS.due_date)
     public ?string $suppId = null;
     public ?string $suppName = null;
     public ?string $rcvDesc = null;
@@ -84,7 +85,7 @@ new class extends Component {
         $this->resetFormFields();
         $this->formMode = 'edit';
 
-        $hdr = DB::table('imtxn_receivehdrs')->where('rcv_no', $rcvNo)->first();
+        $hdr = DB::table('tktxn_rcvhdrs')->where('rcv_no', $rcvNo)->first();
         if (!$hdr) {
             $this->dispatch('toast', type: 'error', message: 'Data tidak ditemukan.');
             return;
@@ -92,9 +93,11 @@ new class extends Component {
 
         $this->rcvNo = (int) $hdr->rcv_no;
         $this->rcvDate = $hdr->rcv_date ? Carbon::parse($hdr->rcv_date)->format('d/m/Y H:i:s') : null;
+        $this->dueDate = isset($hdr->due_date) && $hdr->due_date ? Carbon::parse($hdr->due_date)->format('d/m/Y') : null;
         $this->suppId = $hdr->supp_id;
         $this->rcvDesc = $hdr->rcv_desc;
-        $this->spNo = $hdr->sp_no ? (int) $hdr->sp_no : null;
+        // sp_no = sirus-only, tidak ada di siklik tktxn_rcvhdrs
+        $this->spNo = isset($hdr->sp_no) && $hdr->sp_no ? (int) $hdr->sp_no : null;
         $this->rcvDiskon = (int) ($hdr->rcv_diskon ?? 0);
         $this->rcvPpn = (float) ($hdr->rcv_ppn ?? 0);
         $this->rcvPpnStatus = (string) ($hdr->rcv_ppn_status ?? '1');
@@ -245,7 +248,7 @@ new class extends Component {
 
     private function cekHargaBeli(string $productId, string $productName, int $newPrice): void
     {
-        $masterPrice = (int) (DB::table('immst_products')->where('product_id', $productId)->value('cost_price') ?? 0);
+        $masterPrice = (int) (DB::table('tkmst_products')->where('product_id', $productId)->value('cost_price') ?? 0);
 
         if ($newPrice === $masterPrice) {
             return;
@@ -261,11 +264,11 @@ new class extends Component {
         }
 
         // Cek setting auto update
-        $autoUpdate = DB::table('rsmst_identitases')->value('rcvupdate_cost_price') ?? '0';
+        $autoUpdate = DB::table('dimst_identitases')->value('rcvupdate_cost_price') ?? '0';
 
         if ($autoUpdate === '1') {
             // Auto update harga di master
-            DB::table('immst_products')
+            DB::table('tkmst_products')
                 ->where('product_id', $productId)
                 ->update(['cost_price' => $newPrice]);
             $this->dispatch('toast', type: 'success', message: "Harga master {$productName} otomatis diupdate.");
@@ -286,7 +289,7 @@ new class extends Component {
             return;
         }
 
-        DB::table('immst_products')
+        DB::table('tkmst_products')
             ->where('product_id', $this->pendingPriceUpdate['product_id'])
             ->update(['cost_price' => $this->pendingPriceUpdate['new_price']]);
 
@@ -310,10 +313,10 @@ new class extends Component {
      ══════════════════════════════ */
     private function loadDetailsFromDb(): void
     {
-        $rows = DB::table('imtxn_receivedtls as a')
-            ->leftJoin('immst_products as b', 'a.product_id', '=', 'b.product_id')
+        $rows = DB::table('tktxn_rcvdtls as a')
+            ->leftJoin('tkmst_products as b', 'a.product_id', '=', 'b.product_id')
             ->where('a.rcv_no', $this->rcvNo)
-            ->select(['a.rcv_dtl', 'a.product_id', 'b.product_name', 'a.qty', 'a.cost_price', 'a.dtl_persen', 'a.dtl_diskon', 'a.dtl_persen1', 'a.dtl_diskon1', 'a.rcv_bath', 'a.rcv_ed'])
+            ->select(['a.rcv_dtl', 'a.product_id', 'b.product_name', 'a.qty', 'a.cost_price', 'a.dtl_persen', 'a.dtl_diskon', 'a.dtl_persen1', 'a.dtl_diskon1'])
             ->orderBy('a.rcv_dtl')
             ->get();
 
@@ -344,8 +347,8 @@ new class extends Component {
                 'dtl_diskon1' => $row->dtl_diskon1,
                 'dsp_discount' => $dspDiscount,
                 'dsp_discount1' => $dspDiscount1,
-                'rcv_bath' => $row->rcv_bath,
-                'rcv_ed' => $row->rcv_ed,
+                'rcv_bath' => null,
+                'rcv_ed' => null,
                 'vtotal' => $afterDisc1 - $disc2,
             ];
         }
@@ -441,7 +444,7 @@ new class extends Component {
     {
         // Guard edit mode: status selain 'A' (Daftar Tunggu) sudah final — tidak boleh disimpan ulang.
         if ($this->formMode === 'edit' && $this->rcvNo) {
-            $currentStatus = (string) (DB::table('imtxn_receivehdrs')->where('rcv_no', $this->rcvNo)->value('rcv_status') ?? '');
+            $currentStatus = (string) (DB::table('tktxn_rcvhdrs')->where('rcv_no', $this->rcvNo)->value('rcv_status') ?? '');
             if ($currentStatus !== 'A') {
                 $this->dispatch('toast', type: 'error', message: "Status '{$currentStatus}' — transaksi sudah final, tidak bisa diubah. Batalkan dulu untuk mengembalikan ke Daftar Tunggu.");
                 return;
@@ -478,8 +481,20 @@ new class extends Component {
         $payDate = $rcvStatus === 'L' ? $this->rcvDate : null;
         $cashoutValue = min($bayar, $grandTotal);
 
+        // Status Hutang → due_date wajib & format dd/mm/yyyy
+        if ($rcvStatus === 'H') {
+            $this->validate(
+                ['dueDate' => 'required|date_format:d/m/Y'],
+                [
+                    'dueDate.required' => 'Jatuh tempo wajib diisi (tagihan jadi Hutang).',
+                    'dueDate.date_format' => 'Format jatuh tempo harus dd/mm/yyyy.',
+                ],
+                ['dueDate' => 'Jatuh Tempo'],
+            );
+        }
+
         // Supplier name untuk keterangan cashout
-        $suppName = DB::table('immst_suppliers')->where('supp_id', $this->suppId)->value('supp_name') ?? ($this->suppName ?? '');
+        $suppName = DB::table('tkmst_suppliers')->where('supp_id', $this->suppId)->value('supp_name') ?? ($this->suppName ?? '');
 
         $now = Carbon::now();
         $findShift = DB::table('rstxn_shiftctls')
@@ -494,19 +509,20 @@ new class extends Component {
             DB::transaction(function () use ($empId, $shift, $bayar, $grandTotal, $rcvStatus, $payDate, $cashoutValue, $suppName) {
                 $payDateRaw = $payDate ? DB::raw("to_date('{$payDate}','dd/mm/yyyy hh24:mi:ss')") : null;
 
+                // Jatuh tempo hanya relevan saat status Hutang. Lunas → null.
+                $dueDateRaw = $rcvStatus === 'H' && !empty($this->dueDate) ? DB::raw("to_date('{$this->dueDate}','dd/mm/yyyy')") : null;
+
                 if ($this->formMode === 'create') {
                     // Generate rcv_no
-                    $rcvNo = (int) DB::selectOne('SELECT NVL(MAX(rcv_no),0)+1 AS val FROM imtxn_receivehdrs')->val;
+                    $rcvNo = (int) DB::selectOne('SELECT NVL(MAX(rcv_no),0)+1 AS val FROM tktxn_rcvhdrs')->val;
                     $this->rcvNo = $rcvNo;
 
-                    DB::table('imtxn_receivehdrs')->insert([
+                    DB::table('tktxn_rcvhdrs')->insert([
                         'rcv_no' => $rcvNo,
                         'rcv_date' => DB::raw("to_date('{$this->rcvDate}','dd/mm/yyyy hh24:mi:ss')"),
                         'supp_id' => $this->suppId,
-                        'emp_id' => $empId,
-                        'shift' => $shift,
+                        'kasir_id' => $empId,
                         'rcv_desc' => $this->rcvDesc,
-                        'sp_no' => $this->spNo,
                         'rcv_diskon' => $this->rcvDiskon ?? 0,
                         'rcv_ppn' => $this->rcvPpn ?? 0,
                         'rcv_ppn_status' => $this->rcvPpnStatus,
@@ -514,12 +530,13 @@ new class extends Component {
                         'rcv_bayar' => $bayar,
                         'rcv_status' => $rcvStatus,
                         'pay_date' => $payDateRaw,
+                        'due_date' => $dueDateRaw,
                         'cb_id' => $this->cbId,
                     ]);
 
                     // Insert all details
                     foreach ($this->details as $dtl) {
-                        DB::table('imtxn_receivedtls')->insert([
+                        DB::table('tktxn_rcvdtls')->insert([
                             'rcv_no' => $rcvNo,
                             'rcv_dtl' => DB::raw('rcvdtl_seq.nextval'),
                             'product_id' => $dtl['product_id'],
@@ -529,21 +546,17 @@ new class extends Component {
                             'dtl_diskon' => $dtl['dtl_diskon'] ?? 0,
                             'dtl_persen1' => $dtl['dtl_persen1'] ?? 0,
                             'dtl_diskon1' => $dtl['dtl_diskon1'] ?? 0,
-                            'rcv_bath' => $dtl['rcv_bath'],
-                            'rcv_ed' => $dtl['rcv_ed'],
                         ]);
                     }
                 } else {
                     // Update header
-                    DB::table('imtxn_receivehdrs')
+                    DB::table('tktxn_rcvhdrs')
                         ->where('rcv_no', $this->rcvNo)
                         ->update([
                             'rcv_date' => DB::raw("to_date('{$this->rcvDate}','dd/mm/yyyy hh24:mi:ss')"),
                             'supp_id' => $this->suppId,
-                            'emp_id' => $empId,
-                            'shift' => $shift,
+                            'kasir_id' => $empId,
                             'rcv_desc' => $this->rcvDesc,
-                            'sp_no' => $this->spNo,
                             'rcv_diskon' => $this->rcvDiskon ?? 0,
                             'rcv_ppn' => $this->rcvPpn ?? 0,
                             'rcv_ppn_status' => $this->rcvPpnStatus,
@@ -551,14 +564,15 @@ new class extends Component {
                             'rcv_bayar' => $bayar,
                             'rcv_status' => $rcvStatus,
                             'pay_date' => $payDateRaw,
+                            'due_date' => $dueDateRaw,
                             'cb_id' => $this->cbId,
                         ]);
 
                     // Delete old details & re-insert
-                    DB::table('imtxn_receivedtls')->where('rcv_no', $this->rcvNo)->delete();
+                    DB::table('tktxn_rcvdtls')->where('rcv_no', $this->rcvNo)->delete();
 
                     foreach ($this->details as $dtl) {
-                        DB::table('imtxn_receivedtls')->insert([
+                        DB::table('tktxn_rcvdtls')->insert([
                             'rcv_no' => $this->rcvNo,
                             'rcv_dtl' => DB::raw('rcvdtl_seq.nextval'),
                             'product_id' => $dtl['product_id'],
@@ -568,17 +582,15 @@ new class extends Component {
                             'dtl_diskon' => $dtl['dtl_diskon'] ?? 0,
                             'dtl_persen1' => $dtl['dtl_persen1'] ?? 0,
                             'dtl_diskon1' => $dtl['dtl_diskon1'] ?? 0,
-                            'rcv_bath' => $dtl['rcv_bath'],
-                            'rcv_ed' => $dtl['rcv_ed'],
                         ]);
                     }
 
                     // Hapus pembayaran lama (edit mode) supaya tidak double insert
-                    DB::table('imtxn_receivepayments')->where('rcv_no', $this->rcvNo)->delete();
-                    $oldCashoutNos = DB::table('imtxn_cashoutdtls')->where('rcv_no', $this->rcvNo)->pluck('cashout_no')->all();
-                    DB::table('imtxn_cashoutdtls')->where('rcv_no', $this->rcvNo)->delete();
+                    DB::table('tktxn_rcvpayments')->where('rcv_no', $this->rcvNo)->delete();
+                    $oldCashoutNos = DB::table('tktxn_cashoutdtls')->where('rcv_no', $this->rcvNo)->pluck('cashout_no')->all();
+                    DB::table('tktxn_cashoutdtls')->where('rcv_no', $this->rcvNo)->delete();
                     if (!empty($oldCashoutNos)) {
-                        DB::table('imtxn_cashouthdrs')->whereIn('cashout_no', $oldCashoutNos)->delete();
+                        DB::table('tktxn_cashouthdrs')->whereIn('cashout_no', $oldCashoutNos)->delete();
                     }
                 }
 
@@ -587,36 +599,32 @@ new class extends Component {
                     $cashoutNo = (int) DB::selectOne('SELECT cashout_seq.nextval AS val FROM dual')->val;
                     $desc = 'Angsuran Awal, Atas Nama :"' . $suppName . '" Nota No "' . $this->rcvNo . '".';
 
-                    DB::table('imtxn_cashouthdrs')->insert([
-                        'shift' => $shift,
+                    DB::table('tktxn_cashouthdrs')->insert([
                         'cb_id' => $this->cbId,
                         'cashout_no' => $cashoutNo,
                         'cashout_date' => DB::raw("to_date('{$this->rcvDate}','dd/mm/yyyy hh24:mi:ss')"),
                         'cashout_desc' => $desc,
                         'cashout_value' => $cashoutValue,
-                        'emp_id' => $empId,
+                        'kasir_id' => $empId,
                         'supp_id' => $this->suppId,
                     ]);
 
-                    DB::table('imtxn_cashoutdtls')->insert([
+                    DB::table('tktxn_cashoutdtls')->insert([
                         'cashout_no' => $cashoutNo,
                         'rcv_no' => $this->rcvNo,
                         'cashout_dtl' => DB::raw('codtl_seq.nextval'),
                     ]);
 
-                    DB::table('imtxn_receivepayments')->insert([
+                    DB::table('tktxn_rcvpayments')->insert([
                         'rcvp_no' => DB::raw('rcvp_seq.nextval'),
                         'rcv_no' => $this->rcvNo,
                         'rcvp_date' => DB::raw("to_date('{$this->rcvDate}','dd/mm/yyyy hh24:mi:ss')"),
                         'rcvp_value' => $cashoutValue,
-                        'emp_id' => $empId,
                     ]);
                 }
             });
 
-            $msg = $rcvStatus === 'L'
-                ? 'Obat dari PBF — lunas, disimpan & diposting.'
-                : 'Obat dari PBF — status Hutang, disimpan & diposting.';
+            $msg = $rcvStatus === 'L' ? 'Obat dari PBF — lunas, disimpan & diposting.' : 'Obat dari PBF — status Hutang, disimpan & diposting.';
             $this->dispatch('toast', type: 'success', message: $msg);
             $this->closeBayar();
             $this->closeModal();
@@ -643,8 +651,8 @@ new class extends Component {
 
         try {
             DB::transaction(function () use ($rcvNo) {
-                DB::table('imtxn_receivedtls')->where('rcv_no', $rcvNo)->delete();
-                DB::table('imtxn_receivehdrs')->where('rcv_no', $rcvNo)->delete();
+                DB::table('tktxn_rcvdtls')->where('rcv_no', $rcvNo)->delete();
+                DB::table('tktxn_rcvhdrs')->where('rcv_no', $rcvNo)->delete();
             });
 
             $this->dispatch('toast', type: 'success', message: 'Data penerimaan berhasil dihapus.');
@@ -684,7 +692,7 @@ new class extends Component {
         }
 
         try {
-            $hdr = DB::table('imtxn_receivehdrs')->where('rcv_no', $rcvNo)->first();
+            $hdr = DB::table('tktxn_rcvhdrs')->where('rcv_no', $rcvNo)->first();
             if (!$hdr) {
                 $this->dispatch('toast', type: 'error', message: 'Data transaksi tidak ditemukan.');
                 return;
@@ -699,7 +707,9 @@ new class extends Component {
 
             if ($status === 'A') {
                 DB::transaction(function () use ($rcvNo) {
-                    DB::table('imtxn_receivehdrs')->where('rcv_no', $rcvNo)->update(['rcv_status' => 'F']);
+                    DB::table('tktxn_rcvhdrs')
+                        ->where('rcv_no', $rcvNo)
+                        ->update(['rcv_status' => 'F']);
                 });
                 $this->dispatch('toast', type: 'success', message: 'Transaksi berhasil dibatalkan.');
                 $this->dispatch('penerimaan-medis.saved');
@@ -707,26 +717,35 @@ new class extends Component {
             }
 
             if (in_array($status, ['H', 'L'], true)) {
-                $cekPembayaran = (int) DB::table('imtxn_cashoutdtls')->where('rcv_no', $rcvNo)->count();
-                if ($cekPembayaran > 1) {
-                    $this->dispatch('toast', type: 'error', message: 'Tidak bisa membatalkan — status pembayaran terkunci dengan nota lain.');
+                $cekPembayaran = (int) DB::table('tktxn_cashoutdtls')->where('rcv_no', $rcvNo)->count();
+                /*if ($cekPembayaran > 1) {
+                    $this->dispatch('toast', type: 'error', message: "Nota ini punya {$cekPembayaran}x history pembayaran (DP + cicilan). " . 'Hapus pembayaran terakhir di Pembayaran Hutang PBF dulu, baru batalkan.');
+                    return;
+                }*/
+
+                // Cek juga: cashout master dishare dengan rcv lain? Kalau iya, jangan delete cashouthdrs.
+                $sharedCashout = DB::table('tktxn_cashoutdtls as a')->join('tktxn_cashoutdtls as b', 'a.cashout_no', '=', 'b.cashout_no')->where('a.rcv_no', $rcvNo)->where('b.rcv_no', '!=', $rcvNo)->exists();
+                if ($sharedCashout) {
+                    $this->dispatch('toast', type: 'error', message: 'Cashout pembayaran nota ini dishare dgn nota lain. Hapus dari sisi Pembayaran Hutang PBF dulu.');
                     return;
                 }
 
                 DB::transaction(function () use ($rcvNo) {
-                    DB::table('imtxn_receivepayments')->where('rcv_no', $rcvNo)->delete();
+                    DB::table('tktxn_rcvpayments')->where('rcv_no', $rcvNo)->delete();
 
-                    $cashoutNos = DB::table('imtxn_cashoutdtls')->where('rcv_no', $rcvNo)->pluck('cashout_no')->all();
-                    DB::table('imtxn_cashoutdtls')->where('rcv_no', $rcvNo)->delete();
+                    $cashoutNos = DB::table('tktxn_cashoutdtls')->where('rcv_no', $rcvNo)->pluck('cashout_no')->all();
+                    DB::table('tktxn_cashoutdtls')->where('rcv_no', $rcvNo)->delete();
                     if (!empty($cashoutNos)) {
-                        DB::table('imtxn_cashouthdrs')->whereIn('cashout_no', $cashoutNos)->delete();
+                        DB::table('tktxn_cashouthdrs')->whereIn('cashout_no', $cashoutNos)->delete();
                     }
 
-                    DB::table('imtxn_receivehdrs')->where('rcv_no', $rcvNo)->update([
-                        'rcv_status' => 'A',
-                        'rcv_bayar' => 0,
-                        'pay_date' => null,
-                    ]);
+                    DB::table('tktxn_rcvhdrs')
+                        ->where('rcv_no', $rcvNo)
+                        ->update([
+                            'rcv_status' => 'A',
+                            'rcv_bayar' => 0,
+                            'pay_date' => null,
+                        ]);
                 });
 
                 $this->dispatch('toast', type: 'success', message: 'Pembayaran di-rollback. Status kembali ke Daftar Tunggu (A).');
@@ -754,9 +773,9 @@ new class extends Component {
         $this->reset(['rcvDiskon', 'rcvPpn', 'rcvMaterai', 'bayar', 'cbId', 'cbDesc']);
         $this->resetErrorBag('cbId');
 
-        // Auto-fill PPN dari RSMST_IDENTITASES (port Oracle Forms):
+        // Auto-fill PPN dari DIMST_IDENTITASES (port Oracle Forms):
         //   AUTO_PPN_STATUS = '0' → PPN 0%, selain itu → ambil PPN_VALUE master.
-        $idn = DB::table('rsmst_identitases')->select('auto_ppn_status', 'ppn_value')->first();
+        $idn = DB::table('dimst_identitases')->select('auto_ppn_status', 'ppn_value')->first();
         if ($idn) {
             $this->rcvPpnStatus = (string) ($idn->auto_ppn_status ?? '1');
             $this->rcvPpn = $this->rcvPpnStatus === '0' ? 0 : (float) ($idn->ppn_value ?? 0);
@@ -794,7 +813,7 @@ new class extends Component {
 
     protected function resetFormFields(): void
     {
-        $this->reset(['rcvNo', 'rcvDate', 'suppId', 'suppName', 'rcvDesc', 'spNo', 'rcvStatus', 'entryProductId', 'entryProductName', 'entryQty', 'entryCostPrice', 'entryDiscount1', 'entryDiscount2', 'entryRcvBath', 'entryRcvEd', 'details', 'totalBarang', 'totalQty', 'rcvDiskon', 'totalSetelahDiskon', 'rcvPpn', 'rcvPpnStatus', 'ppnNominal', 'rcvMaterai', 'grandTotal', 'bayar', 'sisa', 'pendingPriceUpdate', 'cbId', 'cbDesc']);
+        $this->reset(['rcvNo', 'rcvDate', 'dueDate', 'suppId', 'suppName', 'rcvDesc', 'spNo', 'rcvStatus', 'entryProductId', 'entryProductName', 'entryQty', 'entryCostPrice', 'entryDiscount1', 'entryDiscount2', 'entryRcvBath', 'entryRcvEd', 'details', 'totalBarang', 'totalQty', 'rcvDiskon', 'totalSetelahDiskon', 'rcvPpn', 'rcvPpnStatus', 'ppnNominal', 'rcvMaterai', 'grandTotal', 'bayar', 'sisa', 'pendingPriceUpdate', 'cbId', 'cbDesc']);
         $this->detailCounter = 0;
         $this->resetValidation();
     }
@@ -828,10 +847,30 @@ new class extends Component {
                             </div>
                             @php
                                 [$modalTitle, $modalSubtitle, $modeBadgeLabel, $modeBadgeVariant] = match (true) {
-                                    $formMode === 'create' => ['Tambah Obat dari PBF', 'Catat penerimaan obat baru dari PBF / Supplier.', 'Tambah Baru', 'success'],
-                                    in_array($rcvStatus, ['H', 'L'], true) => ["Lihat Obat dari PBF #{$rcvNo}", 'Transaksi sudah diposting — data hanya bisa dilihat. Gunakan "Batalkan Transaksi" kalau perlu revisi.', 'Lihat (Final)', 'alternative'],
-                                    $rcvStatus === 'F' => ["Lihat Obat dari PBF #{$rcvNo}", 'Transaksi sudah dibatalkan — hanya untuk riwayat.', 'Batal', 'danger'],
-                                    default => ["Edit Obat dari PBF #{$rcvNo}", 'Ubah data penerimaan obat (Daftar Tunggu).', 'Edit', 'warning'],
+                                    $formMode === 'create' => [
+                                        'Tambah Obat dari PBF',
+                                        'Catat penerimaan obat baru dari PBF / Supplier.',
+                                        'Tambah Baru',
+                                        'success',
+                                    ],
+                                    in_array($rcvStatus, ['H', 'L'], true) => [
+                                        "Lihat Obat dari PBF #{$rcvNo}",
+                                        'Transaksi sudah diposting — data hanya bisa dilihat. Gunakan "Batalkan Transaksi" kalau perlu revisi.',
+                                        'Lihat (Final)',
+                                        'alternative',
+                                    ],
+                                    $rcvStatus === 'F' => [
+                                        "Lihat Obat dari PBF #{$rcvNo}",
+                                        'Transaksi sudah dibatalkan — hanya untuk riwayat.',
+                                        'Batal',
+                                        'danger',
+                                    ],
+                                    default => [
+                                        "Edit Obat dari PBF #{$rcvNo}",
+                                        'Ubah data penerimaan obat (Daftar Tunggu).',
+                                        'Edit',
+                                        'warning',
+                                    ],
                                 };
                             @endphp
                             <div>
@@ -877,8 +916,8 @@ new class extends Component {
                             <div>
                                 <x-input-label value="Tanggal" :required="true" />
                                 <x-text-input type="text" wire:model="rcvDate" placeholder="dd/mm/yyyy hh:mm:ss"
-                                    class="w-full mt-1" x-ref="inputRcvDate" @disabled($isReadOnly)
-                                    x-on:keydown.enter.prevent="$refs.lovSupplierWrapper?.querySelector('input:not([disabled])')?.focus()" />
+                                    class="w-full mt-1" x-ref="inputRcvDate" :disabled="$isReadOnly"
+                                    x-on:keydown.enter.prevent="$refs.lovSupplierWrapper?.querySelector('input')?.focus()" />
                             </div>
                             <div x-ref="lovSupplierWrapper">
                                 <livewire:lov.supplier.lov-supplier target="supplier-rcv" label="Supplier"
@@ -888,15 +927,16 @@ new class extends Component {
                             <div>
                                 <x-input-label value="Keterangan" />
                                 <x-text-input type="text" wire:model="rcvDesc" placeholder="Keterangan penerimaan"
-                                    class="w-full mt-1" x-ref="inputRcvDesc" @disabled($isReadOnly)
-                                    x-on:keydown.enter.prevent="$refs.entryProductWrapper?.querySelector('input:not([disabled])')?.focus()" />
+                                    class="w-full mt-1" x-ref="inputRcvDesc" :disabled="$isReadOnly"
+                                    x-on:keydown.enter.prevent="$refs.entryProductWrapper?.querySelector('input:not([readonly])')?.focus()" />
                             </div>
                         </div>
                     </x-border-form>
 
                     {{-- ═══ SECTION 2: TAMBAH BARANG + KERANJANG — tampil kalau supplier sudah dipilih ═══ --}}
                     @if (empty($suppId))
-                        <div class="flex flex-col items-center justify-center gap-2 py-12 text-center border border-dashed col-span-5 rounded-2xl border-gray-300 bg-gray-50/60 dark:bg-gray-800/30 dark:border-gray-700">
+                        <div
+                            class="flex flex-col items-center justify-center gap-2 py-12 text-center border border-dashed col-span-5 rounded-2xl border-gray-300 bg-gray-50/60 dark:bg-gray-800/30 dark:border-gray-700">
                             <svg class="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24"
                                 stroke="currentColor" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -908,205 +948,214 @@ new class extends Component {
                             </p>
                         </div>
                     @else
-                    <x-border-form :title="($isReadOnly ? 'Keranjang (' : 'Tambah Barang / Keranjang (') . count($details) . ' item)'" padding="p-0"
-                        class="overflow-hidden col-span-5"
-                        wire:key="entry-section-{{ $renderVersions['entry'] ?? 0 }}">
-                        {{-- Form entry (sembunyikan saat status non-editable) --}}
-                        @if (!$isReadOnly)
-                        <div class="p-4 ">
-                            <div class="grid grid-cols-2 gap-3 sm:grid-cols-[2.5fr_0.7fr_repeat(5,1fr)_auto] items-start">
-                                {{-- Barang --}}
-                                <div class="col-span-2 sm:col-span-1" x-ref="entryProductWrapper">
-                                    <div>
-                                        <livewire:lov.product.lov-product target="product-rcv" label="Barang"
-                                            :initialProductId="$entryProductId"
-                                            wire:key="lov-prod-{{ $rcvNo ?? 'new' }}-{{ $renderVersions['entry'] ?? 0 }}" />
-                                    </div>
-                                    <div class="mt-1 min-h-[1.25rem]">
-                                        <x-input-error :messages="$errors->get('entryProductId')" />
+                        <x-border-form :title="($isReadOnly ? 'Keranjang (' : 'Tambah Barang / Keranjang (') .
+                            count($details) .
+                            ' item)'" padding="p-0" class="overflow-hidden col-span-5"
+                            wire:key="entry-section-{{ $renderVersions['entry'] ?? 0 }}">
+                            {{-- Form entry (sembunyikan saat status non-editable) --}}
+                            @if (!$isReadOnly)
+                                <div class="p-4 ">
+                                    <div
+                                        class="grid grid-cols-2 gap-3 sm:grid-cols-[2.5fr_0.7fr_repeat(5,1fr)_auto] items-start">
+                                        {{-- Barang --}}
+                                        <div class="col-span-2 sm:col-span-1" x-ref="entryProductWrapper">
+                                            <div>
+                                                <livewire:lov.product.lov-product target="product-rcv" label="Barang"
+                                                    :initialProductId="$entryProductId"
+                                                    wire:key="lov-prod-{{ $rcvNo ?? 'new' }}-{{ $renderVersions['entry'] ?? 0 }}" />
+                                            </div>
+                                            <div class="mt-1 min-h-[1.25rem]">
+                                                <x-input-error :messages="$errors->get('entryProductId')" />
+                                            </div>
+                                        </div>
+                                        {{-- Qty --}}
+                                        <div>
+                                            <div>
+                                                <x-input-label value="Qty" />
+                                                <x-text-input-number wire:model="entryQty" x-ref="inputEntryQty"
+                                                    :error="$errors->has('entryQty')"
+                                                    x-on:keydown.enter.prevent="$el.blur(); $nextTick(() => $refs.inputEntryCost?.focus())" />
+                                            </div>
+                                            <div class="mt-1 min-h-[1.25rem]">
+                                                <x-input-error :messages="$errors->get('entryQty')" />
+                                            </div>
+                                        </div>
+                                        {{-- Harga --}}
+                                        <div>
+                                            <div>
+                                                <x-input-label value="Harga" />
+                                                <x-text-input-number wire:model="entryCostPrice" x-ref="inputEntryCost"
+                                                    :error="$errors->has('entryCostPrice')"
+                                                    x-on:keydown.enter.prevent="$el.blur(); $nextTick(() => { $wire.cekHargaBeliEntry(); $refs.inputEntryDisc1?.focus() })" />
+                                            </div>
+                                            <div class="mt-1 min-h-[1.25rem]">
+                                                <x-input-error :messages="$errors->get('entryCostPrice')" />
+                                            </div>
+                                        </div>
+                                        {{-- Disc 1 --}}
+                                        <div>
+                                            <div>
+                                                <x-input-label value="Disc 1" />
+                                                <x-text-input type="text" wire:model="entryDiscount1"
+                                                    class="w-full mt-1" placeholder="10% / 5000" :error="$errors->has('entryDiscount1')"
+                                                    x-ref="inputEntryDisc1"
+                                                    x-on:keydown.enter.prevent="$refs.inputEntryDisc2?.focus()" />
+                                            </div>
+                                            <div class="mt-1 min-h-[1.25rem]">
+                                                <x-input-error :messages="$errors->get('entryDiscount1')" />
+                                            </div>
+                                        </div>
+                                        {{-- Disc 2 --}}
+                                        <div>
+                                            <div>
+                                                <x-input-label value="Disc 2" />
+                                                <x-text-input type="text" wire:model="entryDiscount2"
+                                                    class="w-full mt-1" placeholder="5% / 1000" :error="$errors->has('entryDiscount2')"
+                                                    x-ref="inputEntryDisc2"
+                                                    x-on:keydown.enter.prevent="$refs.inputEntryBatch?.focus()" />
+                                            </div>
+                                            <div class="mt-1 min-h-[1.25rem]">
+                                                <x-input-error :messages="$errors->get('entryDiscount2')" />
+                                            </div>
+                                        </div>
+                                        {{-- Batch --}}
+                                        <div>
+                                            <div>
+                                                <x-input-label value="Batch" />
+                                                <x-text-input type="text" wire:model="entryRcvBath"
+                                                    class="w-full mt-1" placeholder="Batch" :error="$errors->has('entryRcvBath')"
+                                                    x-ref="inputEntryBatch"
+                                                    x-on:keydown.enter.prevent="$refs.inputEntryEd?.focus()" />
+                                            </div>
+                                            <div class="mt-1 min-h-[1.25rem]">
+                                                <x-input-error :messages="$errors->get('entryRcvBath')" />
+                                            </div>
+                                        </div>
+                                        {{-- ED --}}
+                                        <div>
+                                            <div>
+                                                <x-input-label value="ED" />
+                                                <x-text-input type="text" wire:model="entryRcvEd"
+                                                    class="w-full mt-1" placeholder="dd/mm/yyyy" :error="$errors->has('entryRcvEd')"
+                                                    x-ref="inputEntryEd"
+                                                    x-on:keydown.enter.prevent="$wire.tambahBarang()" />
+                                            </div>
+                                            <div class="mt-1 min-h-[1.25rem]">
+                                                <x-input-error :messages="$errors->get('entryRcvEd')" />
+                                            </div>
+                                        </div>
+                                        {{-- Button (label spacer + button + error spacer biar align dengan field lain) --}}
+                                        <div class="col-span-2 sm:col-span-1">
+                                            <div class="invisible mb-1 text-xs select-none">&nbsp;</div>
+                                            <x-primary-button type="button" wire:click="tambahBarang"
+                                                class="justify-center w-full !px-2" title="Tambah ke Keranjang">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                                    stroke-width="2.5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M12 4v16m8-8H4" />
+                                                </svg>
+                                                <span class="sr-only">Tambah ke Keranjang</span>
+                                            </x-primary-button>
+                                            <div class="mt-1 min-h-[1.25rem]"></div>
+                                        </div>
                                     </div>
                                 </div>
-                                {{-- Qty --}}
-                                <div>
-                                    <div>
-                                        <x-input-label value="Qty" />
-                                        <x-text-input-number wire:model="entryQty" x-ref="inputEntryQty"
-                                            :error="$errors->has('entryQty')"
-                                            x-on:keydown.enter.prevent="$el.blur(); $nextTick(() => $refs.inputEntryCost?.focus())" />
-                                    </div>
-                                    <div class="mt-1 min-h-[1.25rem]">
-                                        <x-input-error :messages="$errors->get('entryQty')" />
-                                    </div>
-                                </div>
-                                {{-- Harga --}}
-                                <div>
-                                    <div>
-                                        <x-input-label value="Harga" />
-                                        <x-text-input-number wire:model="entryCostPrice" x-ref="inputEntryCost"
-                                            :error="$errors->has('entryCostPrice')"
-                                            x-on:keydown.enter.prevent="$el.blur(); $nextTick(() => { $wire.cekHargaBeliEntry(); $refs.inputEntryDisc1?.focus() })" />
-                                    </div>
-                                    <div class="mt-1 min-h-[1.25rem]">
-                                        <x-input-error :messages="$errors->get('entryCostPrice')" />
-                                    </div>
-                                </div>
-                                {{-- Disc 1 --}}
-                                <div>
-                                    <div>
-                                        <x-input-label value="Disc 1" />
-                                        <x-text-input type="text" wire:model="entryDiscount1" class="w-full mt-1"
-                                            placeholder="10% / 5000" :error="$errors->has('entryDiscount1')" x-ref="inputEntryDisc1"
-                                            x-on:keydown.enter.prevent="$refs.inputEntryDisc2?.focus()" />
-                                    </div>
-                                    <div class="mt-1 min-h-[1.25rem]">
-                                        <x-input-error :messages="$errors->get('entryDiscount1')" />
-                                    </div>
-                                </div>
-                                {{-- Disc 2 --}}
-                                <div>
-                                    <div>
-                                        <x-input-label value="Disc 2" />
-                                        <x-text-input type="text" wire:model="entryDiscount2" class="w-full mt-1"
-                                            placeholder="5% / 1000" :error="$errors->has('entryDiscount2')" x-ref="inputEntryDisc2"
-                                            x-on:keydown.enter.prevent="$refs.inputEntryBatch?.focus()" />
-                                    </div>
-                                    <div class="mt-1 min-h-[1.25rem]">
-                                        <x-input-error :messages="$errors->get('entryDiscount2')" />
-                                    </div>
-                                </div>
-                                {{-- Batch --}}
-                                <div>
-                                    <div>
-                                        <x-input-label value="Batch" />
-                                        <x-text-input type="text" wire:model="entryRcvBath" class="w-full mt-1"
-                                            placeholder="Batch" :error="$errors->has('entryRcvBath')" x-ref="inputEntryBatch"
-                                            x-on:keydown.enter.prevent="$refs.inputEntryEd?.focus()" />
-                                    </div>
-                                    <div class="mt-1 min-h-[1.25rem]">
-                                        <x-input-error :messages="$errors->get('entryRcvBath')" />
-                                    </div>
-                                </div>
-                                {{-- ED --}}
-                                <div>
-                                    <div>
-                                        <x-input-label value="ED" />
-                                        <x-text-input type="text" wire:model="entryRcvEd" class="w-full mt-1"
-                                            placeholder="dd/mm/yyyy" :error="$errors->has('entryRcvEd')" x-ref="inputEntryEd"
-                                            x-on:keydown.enter.prevent="$wire.tambahBarang()" />
-                                    </div>
-                                    <div class="mt-1 min-h-[1.25rem]">
-                                        <x-input-error :messages="$errors->get('entryRcvEd')" />
-                                    </div>
-                                </div>
-                                {{-- Button (label spacer + button + error spacer biar align dengan field lain) --}}
-                                <div class="col-span-2 sm:col-span-1">
-                                    <div class="invisible mb-1 text-xs select-none">&nbsp;</div>
-                                    <x-primary-button type="button" wire:click="tambahBarang"
-                                        class="justify-center w-full !px-2" title="Tambah ke Keranjang">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M12 4v16m8-8H4" />
-                                        </svg>
-                                        <span class="sr-only">Tambah ke Keranjang</span>
-                                    </x-primary-button>
-                                    <div class="mt-1 min-h-[1.25rem]"></div>
-                                </div>
-                            </div>
-                        </div>
 
-                        {{-- ═══ KONFIRMASI UPDATE HARGA (amber = warning) ═══ --}}
-                        @if (!empty($pendingPriceUpdate))
-                            <div
-                                class="mx-4 mb-4 flex flex-wrap items-center justify-between gap-3 px-4 py-3 border border-amber-300 rounded-xl bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700">
-                                <div class="flex-1 min-w-0 text-sm text-amber-800 dark:text-amber-200">
-                                    Harga <strong>{{ $pendingPriceUpdate['product_name'] }}</strong> berubah
-                                    (Rp {{ number_format($pendingPriceUpdate['old_price']) }} &rarr; Rp
-                                    {{ number_format($pendingPriceUpdate['new_price']) }}).
-                                    Update harga di master barang?
-                                </div>
-                                <div class="flex gap-2 shrink-0">
-                                    <x-primary-button type="button" wire:click="confirmUpdateHarga"
-                                        class="!py-1 !px-3 text-sm">
-                                        Ya, Update
-                                    </x-primary-button>
-                                    <x-secondary-button type="button" wire:click="skipUpdateHarga"
-                                        class="!py-1 !px-3 text-sm">
-                                        Tidak
-                                    </x-secondary-button>
-                                </div>
-                            </div>
-                        @endif
-                        @endif {{-- /!$isReadOnly: tutup form entry --}}
+                                {{-- ═══ KONFIRMASI UPDATE HARGA (amber = warning) ═══ --}}
+                                @if (!empty($pendingPriceUpdate))
+                                    <div
+                                        class="mx-4 mb-4 flex flex-wrap items-center justify-between gap-3 px-4 py-3 border border-amber-300 rounded-xl bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700">
+                                        <div class="flex-1 min-w-0 text-sm text-amber-800 dark:text-amber-200">
+                                            Harga <strong>{{ $pendingPriceUpdate['product_name'] }}</strong> berubah
+                                            (Rp {{ number_format($pendingPriceUpdate['old_price']) }} &rarr; Rp
+                                            {{ number_format($pendingPriceUpdate['new_price']) }}).
+                                            Update harga di master barang?
+                                        </div>
+                                        <div class="flex gap-2 shrink-0">
+                                            <x-primary-button type="button" wire:click="confirmUpdateHarga"
+                                                class="!py-1 !px-3 text-sm">
+                                                Ya, Update
+                                            </x-primary-button>
+                                            <x-secondary-button type="button" wire:click="skipUpdateHarga"
+                                                class="!py-1 !px-3 text-sm">
+                                                Tidak
+                                            </x-secondary-button>
+                                        </div>
+                                    </div>
+                                @endif
+                            @endif {{-- /!$isReadOnly: tutup form entry --}}
 
-                        {{-- ═══ TABEL KERANJANG — lanjutan section yang sama ═══ --}}
-                        <div class="overflow-x-auto border-t border-gray-200 dark:border-gray-700">
-                            <table class="min-w-full text-sm">
-                                <thead
-                                    class="text-xs tracking-wider text-gray-600 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-200">
-                                    <tr class="text-left">
-                                        <th class="px-3 py-2 font-semibold">#</th>
-                                        <th class="px-3 py-2 font-semibold">Barang</th>
-                                        <th class="px-3 py-2 font-semibold text-right">Qty</th>
-                                        <th class="px-3 py-2 font-semibold text-right">Harga</th>
-                                        <th class="px-3 py-2 font-semibold text-right">Diskon</th>
-                                        <th class="px-3 py-2 font-semibold text-right">Total</th>
-                                        <th class="px-3 py-2 font-semibold">Batch</th>
-                                        <th class="px-3 py-2 font-semibold">ED</th>
-                                        @if (!$isReadOnly)
-                                            <th class="px-3 py-2 font-semibold"></th>
-                                        @endif
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                                    @forelse($details as $i => $dtl)
-                                        <tr wire:key="dtl-{{ $dtl['_key'] }}"
-                                            class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                                            <td class="px-3 py-2 text-gray-400">{{ $i + 1 }}</td>
-                                            <td class="px-3 py-2">
-                                                <div class="font-medium text-gray-900 dark:text-gray-100">
-                                                    {{ $dtl['product_name'] ?? '-' }}</div>
-                                                <div class="text-xs text-gray-400">{{ $dtl['product_id'] }}</div>
-                                            </td>
-                                            <td class="px-3 py-2 font-mono text-right">
-                                                {{ number_format($dtl['qty'] ?? 0) }}</td>
-                                            <td class="px-3 py-2 font-mono text-right">
-                                                {{ number_format($dtl['cost_price'] ?? 0) }}</td>
-                                            <td class="px-3 py-2 text-right">
-                                                <div>{{ $dtl['dsp_discount'] ?? '-' }}</div>
-                                                @if (!empty($dtl['dsp_discount1']))
-                                                    <div class="text-xs text-gray-400">{{ $dtl['dsp_discount1'] }}
-                                                    </div>
-                                                @endif
-                                            </td>
-                                            <td
-                                                class="px-3 py-2 font-mono font-semibold text-right text-brand dark:text-brand-lime">
-                                                Rp {{ number_format($dtl['vtotal'] ?? 0) }}</td>
-                                            <td class="px-3 py-2">{{ $dtl['rcv_bath'] ?? '-' }}</td>
-                                            <td class="px-3 py-2">{{ $dtl['rcv_ed'] ?? '-' }}</td>
+                            {{-- ═══ TABEL KERANJANG — lanjutan section yang sama ═══ --}}
+                            <div class="overflow-x-auto border-t border-gray-200 dark:border-gray-700">
+                                <table class="min-w-full text-sm">
+                                    <thead
+                                        class="text-xs tracking-wider text-gray-600 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-200">
+                                        <tr class="text-left">
+                                            <th class="px-3 py-2 font-semibold">#</th>
+                                            <th class="px-3 py-2 font-semibold">Barang</th>
+                                            <th class="px-3 py-2 font-semibold text-right">Qty</th>
+                                            <th class="px-3 py-2 font-semibold text-right">Harga</th>
+                                            <th class="px-3 py-2 font-semibold text-right">Diskon</th>
+                                            <th class="px-3 py-2 font-semibold text-right">Total</th>
+                                            <th class="px-3 py-2 font-semibold">Batch</th>
+                                            <th class="px-3 py-2 font-semibold">ED</th>
                                             @if (!$isReadOnly)
-                                                <td class="px-3 py-2">
-                                                    <x-confirm-button variant="danger" :action="'hapusBarang(' . $dtl['_key'] . ')'"
-                                                        title="Hapus Barang"
-                                                        message="Hapus {{ $dtl['product_name'] ?? '' }} dari keranjang?"
-                                                        confirmText="Ya" cancelText="Batal" class="!py-1 !px-2 text-xs">
-                                                        X
-                                                    </x-confirm-button>
-                                                </td>
+                                                <th class="px-3 py-2 font-semibold"></th>
                                             @endif
                                         </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="{{ $isReadOnly ? 8 : 9 }}"
-                                                class="px-4 py-8 text-sm text-center text-gray-400">
-                                                Keranjang kosong{{ $isReadOnly ? '.' : '. Tambahkan barang di atas.' }}
-                                            </td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </x-border-form>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                        @forelse($details as $i => $dtl)
+                                            <tr wire:key="dtl-{{ $dtl['_key'] }}"
+                                                class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                                <td class="px-3 py-2 text-gray-400">{{ $i + 1 }}</td>
+                                                <td class="px-3 py-2">
+                                                    <div class="font-medium text-gray-900 dark:text-gray-100">
+                                                        {{ $dtl['product_name'] ?? '-' }}</div>
+                                                    <div class="text-xs text-gray-400">{{ $dtl['product_id'] }}</div>
+                                                </td>
+                                                <td class="px-3 py-2 font-mono text-right">
+                                                    {{ number_format($dtl['qty'] ?? 0) }}</td>
+                                                <td class="px-3 py-2 font-mono text-right">
+                                                    {{ number_format($dtl['cost_price'] ?? 0) }}</td>
+                                                <td class="px-3 py-2 text-right">
+                                                    <div>{{ $dtl['dsp_discount'] ?? '-' }}</div>
+                                                    @if (!empty($dtl['dsp_discount1']))
+                                                        <div class="text-xs text-gray-400">{{ $dtl['dsp_discount1'] }}
+                                                        </div>
+                                                    @endif
+                                                </td>
+                                                <td
+                                                    class="px-3 py-2 font-mono font-semibold text-right text-brand dark:text-brand-lime">
+                                                    Rp {{ number_format($dtl['vtotal'] ?? 0) }}</td>
+                                                <td class="px-3 py-2">{{ $dtl['rcv_bath'] ?? '-' }}</td>
+                                                <td class="px-3 py-2">{{ $dtl['rcv_ed'] ?? '-' }}</td>
+                                                @if (!$isReadOnly)
+                                                    <td class="px-3 py-2">
+                                                        <x-confirm-button variant="danger" :action="'hapusBarang(' . $dtl['_key'] . ')'"
+                                                            title="Hapus Barang"
+                                                            message="Hapus {{ $dtl['product_name'] ?? '' }} dari keranjang?"
+                                                            confirmText="Ya" cancelText="Batal"
+                                                            class="!py-1 !px-2 text-xs">
+                                                            X
+                                                        </x-confirm-button>
+                                                    </td>
+                                                @endif
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="{{ $isReadOnly ? 8 : 9 }}"
+                                                    class="px-4 py-8 text-sm text-center text-gray-400">
+                                                    Keranjang
+                                                    kosong{{ $isReadOnly ? '.' : '. Tambahkan barang di atas.' }}
+                                                </td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </x-border-form>
                     @endif
                 </div>
 
@@ -1198,13 +1247,13 @@ new class extends Component {
                         @hasanyrole('Admin|Tu')
                             @if ($formMode === 'edit' && $rcvNo && $rcvStatus !== 'F')
                                 @php
-                                    $batalMsg = $rcvStatus === 'A'
-                                        ? 'Transaksi (Daftar Tunggu) akan di-set ke status Batal (F). Lanjut?'
-                                        : 'Pembayaran akan di-rollback & status kembali ke Daftar Tunggu (A). Lanjut?';
+                                    $batalMsg =
+                                        $rcvStatus === 'A'
+                                            ? 'Transaksi (Daftar Tunggu) akan di-set ke status Batal (F). Lanjut?'
+                                            : 'Pembayaran akan di-rollback & status kembali ke Daftar Tunggu (A). Lanjut?';
                                 @endphp
-                                <x-confirm-button variant="danger" action="batalCurrentRcv()"
-                                    title="Batalkan Transaksi" :message="$batalMsg"
-                                    confirmText="Ya, batalkan" cancelText="Tidak">
+                                <x-confirm-button variant="danger" action="batalCurrentRcv()" title="Batalkan Transaksi"
+                                    :message="$batalMsg" confirmText="Ya, batalkan" cancelText="Tidak">
                                     Batalkan Transaksi
                                 </x-confirm-button>
                             @endif
@@ -1219,8 +1268,7 @@ new class extends Component {
                     {{-- KANAN: Tutup + Bayar --}}
                     <div class="flex flex-wrap justify-end gap-2">
                         <x-secondary-button type="button" wire:click="closeModal">Tutup</x-secondary-button>
-                        <x-primary-button type="button" wire:click="openBayar"
-                            :disabled="count($details) === 0 || ($formMode === 'edit' && $rcvStatus !== 'A')">
+                        <x-primary-button type="button" wire:click="openBayar" :disabled="count($details) === 0 || ($formMode === 'edit' && $rcvStatus !== 'A')">
                             <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                 stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -1297,6 +1345,22 @@ new class extends Component {
                             <x-input-label value="Bayar (Rp)" class="w-32 shrink-0" />
                             <x-text-input-number wire:model.live="bayar" />
                         </div>
+
+                        {{-- Jatuh Tempo: muncul kalau bayar < grandTotal (akan jadi Hutang) --}}
+                        @php $willHutang = ($bayar ?? 0) < $grandTotal; @endphp
+                        @if ($willHutang && $grandTotal > 0)
+                            <div class="flex items-center gap-3">
+                                <x-input-label value="Jatuh Tempo" class="w-32 shrink-0" />
+                                <div class="flex-1">
+                                    <x-text-input type="text" wire:model="dueDate" placeholder="dd/mm/yyyy"
+                                        class="w-full" />
+                                    <p class="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                                        Tagihan akan menjadi <strong>Hutang</strong> — isi tanggal jatuh tempo.
+                                    </p>
+                                </div>
+                            </div>
+                            <x-input-error :messages="$errors->get('dueDate')" class="ml-32" />
+                        @endif
                     </div>
 
                     {{-- Kanan: ringkasan --}}
@@ -1349,7 +1413,8 @@ new class extends Component {
             </div>
 
             {{-- Footer modal bayar --}}
-            <div class="flex justify-end gap-2 px-6 py-4 bg-gray-50 border-t border-gray-200 dark:bg-gray-800/50 dark:border-gray-700">
+            <div
+                class="flex justify-end gap-2 px-6 py-4 bg-gray-50 border-t border-gray-200 dark:bg-gray-800/50 dark:border-gray-700">
                 <x-secondary-button type="button" wire:click="closeBayar">
                     Batal
                 </x-secondary-button>
