@@ -4,7 +4,7 @@
  * LOV Cara Bayar — sumber tabel: tkacc_carabayars where active_status='1'.
  *
  * Payload dispatch ke parent:
- *   ['cb_id' => '...', 'cb_desc' => '...']
+ *   ['cb_id' => '...', 'cb_desc' => '...', 'acc_id' => '...', 'acc_name' => '...']
  *
  * Pakai dari parent:
  *   <livewire:lov.cara-bayar.lov-cara-bayar
@@ -61,9 +61,10 @@ new class extends Component {
 
     protected function loadSelected(string $cbId): void
     {
-        $row = DB::table('tkacc_carabayars')
-            ->select('cb_id', 'cb_desc', 'active_status')
-            ->where('cb_id', $cbId)
+        $row = DB::table('tkacc_carabayars as cb')
+            ->leftJoin('acmst_accounts as a', 'a.acc_id', '=', 'cb.acc_id')
+            ->select('cb.cb_id', 'cb.cb_desc', 'cb.active_status', 'cb.acc_id', 'a.acc_name')
+            ->where('cb.cb_id', $cbId)
             ->first();
 
         if ($row) {
@@ -87,7 +88,7 @@ new class extends Component {
         $upperKeyword = mb_strtoupper($keyword);
 
         // Exact match by cb_id → langsung pilih
-        $exactRow = $this->baseQuery()->where('cb_id', $upperKeyword)->first();
+        $exactRow = $this->baseQuery()->where('cb.cb_id', $upperKeyword)->first();
         if ($exactRow) {
             $this->dispatchSelected($this->buildPayload($exactRow));
             return;
@@ -96,10 +97,10 @@ new class extends Component {
         // Partial match
         $rows = $this->baseQuery()
             ->where(function ($q) use ($upperKeyword) {
-                $q->whereRaw('UPPER(cb_id) LIKE ?', ["%{$upperKeyword}%"])
-                  ->orWhereRaw('UPPER(cb_desc) LIKE ?', ["%{$upperKeyword}%"]);
+                $q->whereRaw('UPPER(cb.cb_id) LIKE ?', ["%{$upperKeyword}%"])
+                  ->orWhereRaw('UPPER(cb.cb_desc) LIKE ?', ["%{$upperKeyword}%"]);
             })
-            ->orderBy('cb_desc')
+            ->orderBy('cb.cb_desc')
             ->limit(50)
             ->get();
 
@@ -120,9 +121,10 @@ new class extends Component {
 
     protected function baseQuery(): \Illuminate\Database\Query\Builder
     {
-        return DB::table('tkacc_carabayars')
-            ->select('cb_id', 'cb_desc', 'active_status')
-            ->where('active_status', '1');
+        return DB::table('tkacc_carabayars as cb')
+            ->leftJoin('acmst_accounts as a', 'a.acc_id', '=', 'cb.acc_id')
+            ->select('cb.cb_id', 'cb.cb_desc', 'cb.active_status', 'cb.acc_id', 'a.acc_name')
+            ->where('cb.active_status', '1');
     }
 
     /* ── Build payload ── */
@@ -130,8 +132,10 @@ new class extends Component {
     protected function buildPayload(object $row): array
     {
         return [
-            'cb_id'   => (string) $row->cb_id,
-            'cb_desc' => (string) ($row->cb_desc ?? ''),
+            'cb_id'    => (string) $row->cb_id,
+            'cb_desc'  => (string) ($row->cb_desc ?? ''),
+            'acc_id'   => (string) ($row->acc_id ?? ''),
+            'acc_name' => (string) ($row->acc_name ?? ''),
         ];
     }
 
@@ -243,6 +247,13 @@ new class extends Component {
                                 </span>
                                 <div class="text-xs font-mono text-gray-400 dark:text-gray-500">
                                     {{ $option['cb_id'] }}
+                                    @if (!empty($option['acc_id']))
+                                        <span class="text-gray-300 dark:text-gray-600">·</span>
+                                        akun: {{ $option['acc_id'] }}
+                                        @if (!empty($option['acc_name']))
+                                            ({{ $option['acc_name'] }})
+                                        @endif
+                                    @endif
                                 </div>
                             </x-lov.item>
                         </li>

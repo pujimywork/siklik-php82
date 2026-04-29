@@ -18,6 +18,7 @@ new class extends Component {
         'cb_id'         => '',
         'cb_desc'       => '',
         'active_status' => '1',
+        'acc_id'        => '',
     ];
 
     public function mount(): void
@@ -49,6 +50,7 @@ new class extends Component {
             'cb_id'         => (string) $row->cb_id,
             'cb_desc'       => (string) ($row->cb_desc ?? ''),
             'active_status' => (string) ($row->active_status ?? '1'),
+            'acc_id'        => (string) ($row->acc_id ?? ''),
         ];
 
         $this->incrementVersion('modal');
@@ -78,30 +80,41 @@ new class extends Component {
         }
     }
 
+    /* ── LOV akun (cash-in) — cara bayar dipetakan ke 1 akun ── */
+    #[On('lov.selected.cb-acc')]
+    public function onAccSelected(string $target, ?array $payload): void
+    {
+        $this->form['acc_id'] = (string) ($payload['acc_id'] ?? '');
+    }
+
     public function save(): void
     {
         $rules = [
             'form.cb_id'         => $this->formMode === 'create'
-                ? 'required|string|max:5|regex:/^[A-Z0-9]+$/|unique:tkacc_carabayars,cb_id'
+                ? 'required|string|max:25|regex:/^[A-Z0-9_-]+$/|unique:tkacc_carabayars,cb_id'
                 : 'required|string',
-            'form.cb_desc'       => 'required|string|max:50',
+            'form.cb_desc'       => 'required|string|max:100',
             'form.active_status' => 'required|in:0,1',
+            'form.acc_id'        => 'nullable|string|max:25|exists:acmst_accounts,acc_id',
         ];
 
         $messages = [
             'form.cb_id.required'      => 'ID Cara Bayar wajib diisi.',
-            'form.cb_id.max'           => 'ID Cara Bayar maksimal 5 karakter.',
-            'form.cb_id.regex'         => 'ID Cara Bayar hanya boleh huruf besar/angka.',
+            'form.cb_id.max'           => 'ID Cara Bayar maksimal 25 karakter.',
+            'form.cb_id.regex'         => 'ID Cara Bayar hanya boleh huruf besar/angka/underscore/dash.',
             'form.cb_id.unique'        => 'ID Cara Bayar sudah digunakan.',
             'form.cb_desc.required'    => 'Deskripsi wajib diisi.',
-            'form.cb_desc.max'         => 'Deskripsi maksimal 50 karakter.',
+            'form.cb_desc.max'         => 'Deskripsi maksimal 100 karakter.',
             'form.active_status.in'    => 'Status hanya 0 (Non-aktif) atau 1 (Aktif).',
+            'form.acc_id.exists'       => 'Akun tidak ditemukan di master akun.',
+            'form.acc_id.max'          => 'Akun maksimal 25 karakter.',
         ];
 
         $attributes = [
             'form.cb_id'         => 'ID Cara Bayar',
             'form.cb_desc'       => 'Deskripsi',
             'form.active_status' => 'Status Aktif',
+            'form.acc_id'        => 'Akun',
         ];
 
         $this->validate($rules, $messages, $attributes);
@@ -109,6 +122,7 @@ new class extends Component {
         $payload = [
             'cb_desc'       => mb_strtoupper($this->form['cb_desc']),
             'active_status' => $this->form['active_status'],
+            'acc_id'        => $this->form['acc_id'] ?: null,
         ];
 
         if ($this->formMode === 'create') {
@@ -134,7 +148,7 @@ new class extends Component {
 
     private function resetForm(): void
     {
-        $this->form = ['cb_id' => '', 'cb_desc' => '', 'active_status' => '1'];
+        $this->form = ['cb_id' => '', 'cb_desc' => '', 'active_status' => '1', 'acc_id' => ''];
         $this->resetValidation();
     }
 };
@@ -189,7 +203,7 @@ new class extends Component {
                             <div>
                                 <x-input-label value="ID" :required="true" />
                                 <x-text-input wire:model.live="form.cb_id" x-ref="inputCbId"
-                                    maxlength="5"
+                                    maxlength="25"
                                     :disabled="$formMode === 'edit'"
                                     :error="$errors->has('form.cb_id')"
                                     class="w-full mt-1 uppercase"
@@ -199,20 +213,37 @@ new class extends Component {
                             <div class="sm:col-span-2">
                                 <x-input-label value="Deskripsi" :required="true" />
                                 <x-text-input wire:model.live="form.cb_desc" x-ref="inputCbDesc"
-                                    maxlength="50"
+                                    maxlength="100"
                                     :error="$errors->has('form.cb_desc')"
                                     class="w-full mt-1 uppercase"
                                     x-on:keydown.enter.prevent="$wire.save()" />
                                 <x-input-error :messages="$errors->get('form.cb_desc')" class="mt-1" />
                             </div>
                         </div>
-                        <div>
-                            <x-input-label value="Status" :required="true" />
-                            <x-select-input wire:model.live="form.active_status" class="w-full mt-1 sm:max-w-xs">
-                                <option value="1">Aktif</option>
-                                <option value="0">Non-aktif</option>
-                            </x-select-input>
-                            <x-input-error :messages="$errors->get('form.active_status')" class="mt-1" />
+
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <x-input-label value="Status" :required="true" />
+                                <x-select-input wire:model.live="form.active_status" class="w-full mt-1">
+                                    <option value="1">Aktif</option>
+                                    <option value="0">Non-aktif</option>
+                                </x-select-input>
+                                <x-input-error :messages="$errors->get('form.active_status')" class="mt-1" />
+                            </div>
+                            <div>
+                                {{-- LOV akun cash-in: cara bayar dipetakan ke 1 akun
+                                     (mis. Tunai → kas, Transfer → bank rekening) --}}
+                                <livewire:lov.akun-ci.lov-akun-ci
+                                    target="cb-acc"
+                                    label="Akun (mapping)"
+                                    placeholder="Cari akun..."
+                                    :initialAccId="$form['acc_id'] ?? null"
+                                    wire:key="lov-akun-cb-{{ $originalId ?? 'new' }}-{{ $renderVersions['modal'] ?? 0 }}" />
+                                <x-input-error :messages="$errors->get('form.acc_id')" class="mt-1" />
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    Akun penerimaan saat cara bayar ini dipakai (Tunai → kas, Transfer → bank).
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </x-border-form>

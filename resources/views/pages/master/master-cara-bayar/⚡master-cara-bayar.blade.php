@@ -51,16 +51,19 @@ new class extends Component {
     #[Computed]
     public function rows()
     {
-        $q = DB::table('tkacc_carabayars')
-            ->select('cb_id', 'cb_desc', 'active_status')
-            ->orderByRaw("CASE WHEN active_status = '1' THEN 0 ELSE 1 END")
-            ->orderBy('cb_desc');
+        $q = DB::table('tkacc_carabayars as cb')
+            ->leftJoin('acmst_accounts as a', 'a.acc_id', '=', 'cb.acc_id')
+            ->select('cb.cb_id', 'cb.cb_desc', 'cb.active_status', 'cb.acc_id', 'a.acc_name')
+            ->orderByRaw("CASE WHEN cb.active_status = '1' THEN 0 ELSE 1 END")
+            ->orderBy('cb.cb_desc');
 
         if (trim($this->searchKeyword) !== '') {
             $kw = mb_strtoupper(trim($this->searchKeyword));
             $q->where(function ($sub) use ($kw) {
-                $sub->whereRaw('UPPER(cb_id) LIKE ?', ["%{$kw}%"])
-                    ->orWhereRaw('UPPER(cb_desc) LIKE ?', ["%{$kw}%"]);
+                $sub->whereRaw('UPPER(cb.cb_id) LIKE ?', ["%{$kw}%"])
+                    ->orWhereRaw('UPPER(cb.cb_desc) LIKE ?', ["%{$kw}%"])
+                    ->orWhereRaw('UPPER(cb.acc_id) LIKE ?', ["%{$kw}%"])
+                    ->orWhereRaw('UPPER(a.acc_name) LIKE ?', ["%{$kw}%"]);
             });
         }
 
@@ -121,6 +124,7 @@ new class extends Component {
                             <tr class="text-left">
                                 <th class="px-4 py-3 font-semibold">ID</th>
                                 <th class="px-4 py-3 font-semibold">DESKRIPSI</th>
+                                <th class="px-4 py-3 font-semibold">AKUN</th>
                                 <th class="px-4 py-3 font-semibold w-32 text-center">STATUS</th>
                                 <th class="px-4 py-3 font-semibold w-40">AKSI</th>
                             </tr>
@@ -135,6 +139,16 @@ new class extends Component {
                                     </td>
                                     <td class="px-4 py-3 font-semibold">
                                         {{ $row->cb_desc }}
+                                    </td>
+                                    <td class="px-4 py-3 text-xs text-gray-600 dark:text-gray-400">
+                                        @if (!empty($row->acc_id))
+                                            <span class="font-mono">{{ $row->acc_id }}</span>
+                                            @if (!empty($row->acc_name))
+                                                — {{ $row->acc_name }}
+                                            @endif
+                                        @else
+                                            <span class="italic text-gray-400">— belum dipetakan —</span>
+                                        @endif
                                     </td>
                                     <td class="px-4 py-3 text-center">
                                         @if ((string) $row->active_status === '1')
@@ -166,7 +180,7 @@ new class extends Component {
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
+                                    <td colspan="5" class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
                                         Data cara bayar tidak ditemukan.
                                     </td>
                                 </tr>
