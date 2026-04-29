@@ -26,6 +26,7 @@
             ['label' => 'Master Pekerjaan',       'route' => 'master.pekerjaan'],
             ['label' => 'Master Tipe Klaim',      'route' => 'master.klaim'],
             ['label' => 'Master Cara Masuk',      'route' => 'master.cara-masuk'],
+            ['label' => 'Master Cara Bayar',      'route' => 'master.cara-bayar'],
             ['label' => 'Master Cara Keluar',     'route' => 'master.cara-keluar'],
             ['label' => 'Master Parameter',       'route' => 'master.parameter'],
             ['label' => 'Master Alat Medis',      'route' => 'master.medik'],

@@ -50,6 +50,9 @@ Route::middleware(['auth'])->group(function () {
     Route::livewire('/master/cara-masuk', 'pages::master.master-cara-masuk.master-cara-masuk')
         ->name('master.cara-masuk');
 
+    Route::livewire('/master/cara-bayar', 'pages::master.master-cara-bayar.master-cara-bayar')
+        ->name('master.cara-bayar');
+
     Route::livewire('/master/cara-keluar', 'pages::master.master-cara-keluar.master-cara-keluar')
         ->name('master.cara-keluar');
 
