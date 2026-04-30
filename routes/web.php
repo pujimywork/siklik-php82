@@ -184,6 +184,15 @@ Route::middleware(['auth'])->group(function () {
     Route::livewire('/keuangan/saldo-kas', 'pages::transaksi.keuangan.saldo-kas.saldo-kas')
         ->name('keuangan.saldo-kas');
 
+    Route::livewire('/keuangan/buku-besar', 'pages::transaksi.keuangan.buku-besar.buku-besar')
+        ->name('keuangan.buku-besar');
+
+    Route::livewire('/keuangan/laba-rugi', 'pages::transaksi.keuangan.laba-rugi.laba-rugi')
+        ->name('keuangan.laba-rugi');
+
+    Route::livewire('/keuangan/neraca', 'pages::transaksi.keuangan.neraca.neraca')
+        ->name('keuangan.neraca');
+
     // ===========================================
     // GUDANG - PENERIMAAN MEDIS
     // ===========================================

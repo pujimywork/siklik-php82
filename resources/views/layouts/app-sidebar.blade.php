@@ -79,6 +79,9 @@
             ['label' => 'Pembayaran Piutang RJ', 'route' => 'keuangan.pembayaran-piutang-rj'],
             ['label' => 'Pembayaran Hutang PBF', 'route' => 'keuangan.pembayaran-hutang-pbf'],
             ['label' => 'Saldo Kas',             'route' => 'keuangan.saldo-kas'],
+            ['label' => 'Buku Besar',            'route' => 'keuangan.buku-besar'],
+            ['label' => 'Laporan Laba Rugi',     'route' => 'keuangan.laba-rugi'],
+            ['label' => 'Laporan Neraca',        'route' => 'keuangan.neraca'],
         ],
         'Database Monitor' => [
             ['label' => 'Monitoring Dashboard', 'route' => 'database-monitor.monitoring-dashboard'],
