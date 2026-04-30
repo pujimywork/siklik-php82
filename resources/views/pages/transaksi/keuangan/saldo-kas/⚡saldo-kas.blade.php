@@ -169,10 +169,10 @@ new class extends Component {
                     <table class="min-w-full text-sm">
                         <thead class="sticky top-0 z-10 text-gray-600 bg-gray-50 dark:bg-gray-800 dark:text-gray-200">
                             <tr class="text-left">
-                                <th class="px-4 py-3 font-semibold w-24">CB ID</th>
+                                <th class="px-4 py-3 font-semibold w-20">CB ID</th>
                                 <th class="px-4 py-3 font-semibold">CARA BAYAR / AKUN</th>
-                                <th class="px-4 py-3 font-semibold w-16 text-center">D/K</th>
-                                <th class="px-4 py-3 font-semibold w-48 text-right">SALDO PER {{ \Carbon\Carbon::parse($tanggal)->format('d/m/Y') }}</th>
+                                <th class="px-4 py-3 font-semibold w-24 text-center">D/K</th>
+                                <th class="px-4 py-3 font-semibold w-60 text-right">SALDO PER {{ \Carbon\Carbon::parse($tanggal)->format('d/m/Y') }}</th>
                                 <th class="px-4 py-3 font-semibold {{ $this->isAdmin() ? 'w-56' : 'w-32' }}">AKSI</th>
                             </tr>
                         </thead>
@@ -194,29 +194,29 @@ new class extends Component {
                                     </td>
                                     <td class="px-4 py-3 text-center align-middle">
                                         @if ((string) $row->acc_dk_status === 'D')
-                                            <span class="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-700">D</span>
+                                            <span class="px-3 py-1 text-sm font-bold rounded bg-blue-100 text-blue-700">D</span>
                                         @elseif ((string) $row->acc_dk_status === 'K')
-                                            <span class="px-2 py-0.5 text-xs rounded bg-purple-100 text-purple-700">K</span>
+                                            <span class="px-3 py-1 text-sm font-bold rounded bg-purple-100 text-purple-700">K</span>
                                         @else
-                                            <span class="text-xs text-gray-400">—</span>
+                                            <span class="text-sm text-gray-400">—</span>
                                         @endif
                                     </td>
                                     <td class="px-4 py-3 font-mono text-right align-middle">
-                                        <span class="text-base font-semibold {{ $row->saldo < 0 ? 'text-red-600' : 'text-gray-900 dark:text-gray-100' }}">
+                                        <span class="text-lg font-bold {{ $row->saldo < 0 ? 'text-red-600' : 'text-gray-900 dark:text-gray-100' }}">
                                             Rp {{ number_format($row->saldo, 0, ',', '.') }}
                                         </span>
                                     </td>
                                     <td class="px-4 py-3 align-middle">
-                                        <div class="flex flex-wrap items-center gap-2">
+                                        <div class="flex items-center gap-2 flex-nowrap">
                                             <x-secondary-button type="button"
                                                 wire:click="openHistory('{{ $row->cb_id }}')"
-                                                class="px-3 py-1.5 text-sm">
+                                                class="px-3 py-1.5 text-sm whitespace-nowrap">
                                                 Riwayat
                                             </x-secondary-button>
                                             @if ($this->isAdmin())
                                                 <x-secondary-button type="button"
                                                     wire:click="openEdit('{{ $row->cb_id }}')"
-                                                    class="px-3 py-1.5 text-sm">
+                                                    class="px-3 py-1.5 text-sm whitespace-nowrap">
                                                     Edit Saldo
                                                 </x-secondary-button>
                                             @endif
