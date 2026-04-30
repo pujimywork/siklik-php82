@@ -73,7 +73,6 @@ new class extends Component {
             ->leftJoin('tkacc_gr_accountses as g', 'g.gra_id', '=', 'a.gra_id')
             ->select('a.acc_id', 'a.acc_desc', 'a.active_status', 'a.kas_status',
                 'a.gra_id', 'g.gra_desc', 'a.acc_dk_status')
-            ->orderByRaw("CASE WHEN a.active_status = '1' THEN 0 ELSE 1 END")
             ->orderBy('a.acc_id');
 
         if (trim($this->searchKeyword) !== '') {
@@ -108,11 +107,11 @@ new class extends Component {
     <header class="bg-white shadow dark:bg-gray-800">
         <div class="w-full px-4 py-2 sm:px-6 lg:px-8">
             <h2 class="text-2xl font-bold leading-tight text-gray-900 dark:text-gray-100">
-                Master Akun (Chart of Accounts)
+                Master Akun
             </h2>
             <p class="text-sm text-gray-500 dark:text-gray-400">
-                Daftar akun pusat. Sumber: <span class="font-mono">tkacc_accountses</span>.
-                Akun bertipe <em>Kas</em> dipakai oleh kasir + cara bayar.
+                Chart of accounts (akun pusat) — sumber tabel: <span class="font-mono">tkacc_accountses</span>.
+                Akun bertipe <em>Kas</em> dipakai oleh kasir &amp; cara bayar.
             </p>
         </div>
     </header>
@@ -187,28 +186,33 @@ new class extends Component {
                     <table class="min-w-full text-sm">
                         <thead class="sticky top-0 z-10 text-gray-600 bg-gray-50 dark:bg-gray-800 dark:text-gray-200">
                             <tr class="text-left">
-                                <th class="px-4 py-3 font-semibold">ID</th>
-                                <th class="px-4 py-3 font-semibold">DESKRIPSI</th>
-                                <th class="px-4 py-3 font-semibold">GROUP</th>
-                                <th class="px-4 py-3 font-semibold w-20 text-center">D/K</th>
-                                <th class="px-4 py-3 font-semibold w-20 text-center">KAS</th>
-                                <th class="px-4 py-3 font-semibold w-24 text-center">STATUS</th>
-                                <th class="px-4 py-3 font-semibold w-56">AKSI</th>
+                                <th class="px-4 py-3 font-semibold w-28">ID</th>
+                                <th class="px-4 py-3 font-semibold w-80">DESKRIPSI / GROUP</th>
+                                <th class="px-4 py-3 font-semibold w-16 text-center">D/K</th>
+                                <th class="px-4 py-3 font-semibold w-32">KAS</th>
+                                <th class="px-4 py-3 font-semibold w-32">STATUS</th>
+                                <th class="px-4 py-3 font-semibold w-44">AKSI</th>
                             </tr>
                         </thead>
                         <tbody class="text-gray-700 divide-y divide-gray-200 dark:divide-gray-700 dark:text-gray-200">
                             @forelse ($this->rows as $row)
                                 <tr wire:key="akun-{{ $row->acc_id }}"
                                     class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
-                                    <td class="px-4 py-3 font-mono text-xs">{{ $row->acc_id }}</td>
-                                    <td class="px-4 py-3 font-semibold">{{ $row->acc_desc }}</td>
-                                    <td class="px-4 py-3 text-xs text-gray-500">
-                                        {{ $row->gra_id }}
-                                        @if (!empty($row->gra_desc))
-                                            — {{ $row->gra_desc }}
+                                    <td class="px-4 py-3 font-mono text-xs align-middle">{{ $row->acc_id }}</td>
+                                    <td class="px-4 py-3 align-middle">
+                                        <div class="text-sm font-medium text-gray-900 truncate dark:text-gray-100">
+                                            {{ $row->acc_desc }}
+                                        </div>
+                                        @if (!empty($row->gra_id) || !empty($row->gra_desc))
+                                            <div class="mt-0.5 text-[11px] text-gray-500 truncate dark:text-gray-400">
+                                                {{ $row->gra_id }}
+                                                @if (!empty($row->gra_desc))
+                                                    — {{ $row->gra_desc }}
+                                                @endif
+                                            </div>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3 text-center">
+                                    <td class="px-4 py-3 text-center align-middle">
                                         @if ((string) $row->acc_dk_status === 'D')
                                             <span class="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-700">D</span>
                                         @elseif ((string) $row->acc_dk_status === 'K')
@@ -217,37 +221,32 @@ new class extends Component {
                                             <span class="text-xs text-gray-400">—</span>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3 text-center">
-                                        @if ((string) $row->kas_status === '1')
-                                            <span class="px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800">Kas</span>
-                                        @else
-                                            <span class="text-xs text-gray-300">—</span>
-                                        @endif
+                                    <td class="px-4 py-3 align-middle">
+                                        <x-toggle :current="(string) $row->kas_status"
+                                            trueValue="1" falseValue="0" size="md"
+                                            wireClick="toggleKas('{{ $row->acc_id }}')">
+                                            {{ (string) $row->kas_status === '1' ? 'Kas' : 'Non-Kas' }}
+                                        </x-toggle>
                                     </td>
-                                    <td class="px-4 py-3 text-center">
-                                        @if ((string) $row->active_status === '1')
-                                            <span class="px-2 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-800">Aktif</span>
-                                        @else
-                                            <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">Non-aktif</span>
-                                        @endif
+                                    <td class="px-4 py-3 align-middle">
+                                        <x-toggle :current="(string) $row->active_status"
+                                            trueValue="1" falseValue="0" size="md"
+                                            wireClick="toggleActive('{{ $row->acc_id }}')">
+                                            {{ (string) $row->active_status === '1' ? 'Aktif' : 'Non-aktif' }}
+                                        </x-toggle>
                                     </td>
-                                    <td class="px-4 py-3">
-                                        <div class="flex flex-wrap gap-1">
+                                    <td class="px-4 py-3 align-middle">
+                                        <div class="flex flex-wrap items-center gap-2">
                                             <x-secondary-button type="button"
-                                                wire:click="openEdit('{{ $row->acc_id }}')" class="px-2 py-1 text-xs">
+                                                wire:click="openEdit('{{ $row->acc_id }}')" class="px-3 py-1.5 text-sm">
                                                 Edit
-                                            </x-secondary-button>
-                                            <x-secondary-button type="button"
-                                                wire:click="toggleKas('{{ $row->acc_id }}')" class="px-2 py-1 text-xs"
-                                                title="Set/unset sebagai akun Kas">
-                                                {{ (string) $row->kas_status === '1' ? 'Bukan Kas' : 'Set Kas' }}
                                             </x-secondary-button>
                                             <x-confirm-button variant="danger"
                                                 :action="'requestDelete(\'' . $row->acc_id . '\')'"
                                                 title="Hapus Akun"
                                                 message="Yakin hapus akun {{ $row->acc_desc }}?"
                                                 confirmText="Ya, hapus" cancelText="Batal"
-                                                class="px-2 py-1 text-xs">
+                                                class="px-3 py-1.5 text-sm">
                                                 Hapus
                                             </x-confirm-button>
                                         </div>
@@ -255,7 +254,7 @@ new class extends Component {
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
+                                    <td colspan="6" class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
                                         Data akun tidak ditemukan.
                                     </td>
                                 </tr>

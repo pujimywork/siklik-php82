@@ -26,6 +26,7 @@
     'disabled' => false,
     'current' => null,
     'wireClick' => null,
+    'size' => 'sm',
 ])
 
 @php
@@ -55,7 +56,14 @@
         !$isOn && $disabled => 'bg-gray-200',
         default => 'bg-gray-300',
     };
-    $thumbClass = $isOn ? 'translate-x-6 ml-1' : 'translate-x-1';
+
+    // Size variants — default 'sm' menjaga kompatibilitas dgn pemakaian existing.
+    [$trackSize, $thumbSize, $thumbOn, $thumbOff, $labelSize] = match ($size) {
+        'lg'    => ['h-8 w-14',  'w-6 h-6 mt-1',   'translate-x-7 ml-1', 'translate-x-1', 'text-base'],
+        'md'    => ['h-7 w-[3.25rem]', 'w-5 h-5 mt-1', 'translate-x-7 ml-1', 'translate-x-1', 'text-sm'],
+        default => ['h-6 w-11',  'w-4 h-4 mt-1',   'translate-x-6 ml-1', 'translate-x-1', 'text-sm'],
+    };
+    $thumbClass = $isOn ? $thumbOn : $thumbOff;
 @endphp
 
 <div x-data="{
@@ -70,13 +78,13 @@
     {{ $attrs->merge([
         'class' => 'flex items-center space-x-2 ' . ($disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'),
     ]) }}>
-    <div class="h-6 transition rounded-full w-11 {{ $trackClass }}">
-        <div class="w-4 h-4 mt-1 transition transform bg-white rounded-full shadow {{ $thumbClass }}"></div>
+    <div class="transition rounded-full {{ $trackSize }} {{ $trackClass }}">
+        <div class="transition transform bg-white rounded-full shadow {{ $thumbSize }} {{ $thumbClass }}"></div>
     </div>
 
     @if ($label)
-        <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 {{ $disabled ? 'opacity-60' : '' }}">{{ $label }}</span>
+        <span class="block font-medium text-gray-700 dark:text-gray-300 {{ $labelSize }} {{ $disabled ? 'opacity-60' : '' }}">{{ $label }}</span>
     @elseif (trim((string) $slot) !== '')
-        <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 {{ $disabled ? 'opacity-60' : '' }}">{{ $slot }}</span>
+        <span class="block font-medium text-gray-700 dark:text-gray-300 {{ $labelSize }} {{ $disabled ? 'opacity-60' : '' }}">{{ $slot }}</span>
     @endif
 </div>
