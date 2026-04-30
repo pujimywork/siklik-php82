@@ -158,7 +158,7 @@ new class extends Component {
                 </div>
             </div>
 
-            <livewire:pages::master.master-cara-masuk.master-cara-masuk-actions wire:key="master-cara-masuk-actions" />
+            <livewire:pages::master.master-klinik.master-cara-masuk.master-cara-masuk-actions wire:key="master-cara-masuk-actions" />
 
         </div>
     </div>

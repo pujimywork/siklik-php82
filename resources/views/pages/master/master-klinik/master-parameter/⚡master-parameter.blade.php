@@ -160,7 +160,7 @@ new class extends Component {
                 </div>
             </div>
 
-            <livewire:pages::master.master-parameter.master-parameter-actions wire:key="master-parameter-actions" />
+            <livewire:pages::master.master-klinik.master-parameter.master-parameter-actions wire:key="master-parameter-actions" />
 
         </div>
     </div>

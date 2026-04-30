@@ -391,7 +391,7 @@ new class extends Component {
             </div>
 
             {{-- Child actions component --}}
-            <livewire:pages::master.master-dokter.master-dokter-actions wire:key="master-dokter-actions" />
+            <livewire:pages::master.master-klinik.master-dokter.master-dokter-actions wire:key="master-dokter-actions" />
 
         </div>
     </div>

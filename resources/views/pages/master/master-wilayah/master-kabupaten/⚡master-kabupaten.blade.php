@@ -182,7 +182,7 @@ new class extends Component {
                 </div>
             </div>
 
-            <livewire:pages::master.master-kabupaten.master-kabupaten-actions wire:key="master-kabupaten-actions" />
+            <livewire:pages::master.master-wilayah.master-kabupaten.master-kabupaten-actions wire:key="master-kabupaten-actions" />
 
         </div>
     </div>

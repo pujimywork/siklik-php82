@@ -294,7 +294,7 @@ new class extends Component {
 
                 {{-- ── CLABITEM (child component) ───────────────── --}}
                 <div class="col-span-2">
-                    <livewire:pages::master.master-laborat.clabitem.master-clabitem wire:key="master-clabitem" />
+                    <livewire:pages::master.master-lab.master-laborat.clabitem.master-clabitem wire:key="master-clabitem" />
                 </div>
 
             </div>
@@ -303,7 +303,7 @@ new class extends Component {
     </div>
 
     {{-- Child: CRUD actions --}}
-    <livewire:pages::master.master-laborat.clab.master-clab-actions wire:key="master-clab-actions" />
-    <livewire:pages::master.master-laborat.clabitem.master-clabitem-actions wire:key="master-clabitem-actions" />
+    <livewire:pages::master.master-lab.master-laborat.clab.master-clab-actions wire:key="master-clab-actions" />
+    <livewire:pages::master.master-lab.master-laborat.clabitem.master-clabitem-actions wire:key="master-clabitem-actions" />
 
 </div>

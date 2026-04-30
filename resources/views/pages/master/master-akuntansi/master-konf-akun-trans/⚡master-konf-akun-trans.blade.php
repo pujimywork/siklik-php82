@@ -152,7 +152,7 @@ new class extends Component {
                 </div>
             </div>
 
-            <livewire:pages::master.master-konf-akun-trans.master-konf-akun-trans-actions wire:key="master-konf-akun-trans-actions" />
+            <livewire:pages::master.master-akuntansi.master-konf-akun-trans.master-konf-akun-trans-actions wire:key="master-konf-akun-trans-actions" />
         </div>
     </div>
 </div>

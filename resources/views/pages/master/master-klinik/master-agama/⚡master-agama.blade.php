@@ -160,7 +160,7 @@ new class extends Component {
                 </div>
             </div>
 
-            <livewire:pages::master.master-agama.master-agama-actions wire:key="master-agama-actions" />
+            <livewire:pages::master.master-klinik.master-agama.master-agama-actions wire:key="master-agama-actions" />
 
         </div>
     </div>

@@ -182,7 +182,7 @@ new class extends Component {
                 </div>
             </div>
 
-            <livewire:pages::master.master-desa.master-desa-actions wire:key="master-desa-actions" />
+            <livewire:pages::master.master-wilayah.master-desa.master-desa-actions wire:key="master-desa-actions" />
 
         </div>
     </div>

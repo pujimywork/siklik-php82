@@ -182,7 +182,7 @@ new class extends Component {
                 </div>
             </div>
 
-            <livewire:pages::master.master-kota-toko.master-kota-toko-actions wire:key="master-kota-toko-actions" />
+            <livewire:pages::master.master-apotek.master-kota-toko.master-kota-toko-actions wire:key="master-kota-toko-actions" />
 
         </div>
     </div>

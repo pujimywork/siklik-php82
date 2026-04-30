@@ -158,7 +158,7 @@ new class extends Component {
                 </div>
             </div>
 
-            <livewire:pages::master.master-prov-toko.master-prov-toko-actions wire:key="master-prov-toko-actions" />
+            <livewire:pages::master.master-apotek.master-prov-toko.master-prov-toko-actions wire:key="master-prov-toko-actions" />
 
         </div>
     </div>

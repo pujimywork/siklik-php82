@@ -166,7 +166,7 @@ new class extends Component {
                 </div>
             </div>
 
-            <livewire:pages::master.master-klaim.master-klaim-actions wire:key="master-klaim-actions" />
+            <livewire:pages::master.master-klinik.master-klaim.master-klaim-actions wire:key="master-klaim-actions" />
 
         </div>
     </div>

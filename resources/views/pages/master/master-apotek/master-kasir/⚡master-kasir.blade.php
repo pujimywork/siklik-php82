@@ -173,7 +173,7 @@ new class extends Component {
                 </div>
             </div>
 
-            <livewire:pages::master.master-kasir.master-kasir-actions wire:key="master-kasir-actions" />
+            <livewire:pages::master.master-apotek.master-kasir.master-kasir-actions wire:key="master-kasir-actions" />
 
         </div>
     </div>

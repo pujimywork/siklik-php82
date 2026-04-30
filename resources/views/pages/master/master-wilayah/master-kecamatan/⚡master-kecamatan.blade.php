@@ -182,7 +182,7 @@ new class extends Component {
                 </div>
             </div>
 
-            <livewire:pages::master.master-kecamatan.master-kecamatan-actions wire:key="master-kecamatan-actions" />
+            <livewire:pages::master.master-wilayah.master-kecamatan.master-kecamatan-actions wire:key="master-kecamatan-actions" />
 
         </div>
     </div>

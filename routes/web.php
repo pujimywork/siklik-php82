@@ -17,124 +17,124 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
 Route::middleware(['auth'])->group(function () {
-    Route::livewire('/master/poli', 'pages::master.master-poli.master-poli')
+    Route::livewire('/master/poli', 'pages::master.master-klinik.master-poli.master-poli')
         ->name('master.poli');
 
-    Route::livewire('/master/dokter', 'pages::master.master-dokter.master-dokter')
+    Route::livewire('/master/dokter', 'pages::master.master-klinik.master-dokter.master-dokter')
         ->name('master.dokter');
 
-    Route::livewire('/master/pasien', 'pages::master.master-pasien.master-pasien')
+    Route::livewire('/master/pasien', 'pages::master.master-klinik.master-pasien.master-pasien')
         ->name('master.pasien');
 
-    Route::livewire('/master/diagnosa', 'pages::master.master-diagnosa.master-diagnosa')
+    Route::livewire('/master/diagnosa', 'pages::master.master-klinik.master-diagnosa.master-diagnosa')
         ->name('master.diagnosa');
 
-    Route::livewire('/master/ref-bpjs', 'pages::master.master-ref-bpjs.master-ref-bpjs')
+    Route::livewire('/master/ref-bpjs', 'pages::master.master-klinik.master-ref-bpjs.master-ref-bpjs')
         ->name('master.ref-bpjs');
 
-    Route::livewire('/master/laborat', 'pages::master.master-laborat.clab.master-clab')
+    Route::livewire('/master/laborat', 'pages::master.master-lab.master-laborat.clab.master-clab')
         ->name('master.laborat');
 
-    Route::livewire('/master/agama', 'pages::master.master-agama.master-agama')
+    Route::livewire('/master/agama', 'pages::master.master-klinik.master-agama.master-agama')
         ->name('master.agama');
 
-    Route::livewire('/master/pendidikan', 'pages::master.master-pendidikan.master-pendidikan')
+    Route::livewire('/master/pendidikan', 'pages::master.master-klinik.master-pendidikan.master-pendidikan')
         ->name('master.pendidikan');
 
-    Route::livewire('/master/pekerjaan', 'pages::master.master-pekerjaan.master-pekerjaan')
+    Route::livewire('/master/pekerjaan', 'pages::master.master-klinik.master-pekerjaan.master-pekerjaan')
         ->name('master.pekerjaan');
 
-    Route::livewire('/master/klaim', 'pages::master.master-klaim.master-klaim')
+    Route::livewire('/master/klaim', 'pages::master.master-klinik.master-klaim.master-klaim')
         ->name('master.klaim');
 
-    Route::livewire('/master/cara-masuk', 'pages::master.master-cara-masuk.master-cara-masuk')
+    Route::livewire('/master/cara-masuk', 'pages::master.master-klinik.master-cara-masuk.master-cara-masuk')
         ->name('master.cara-masuk');
 
-    Route::livewire('/master/cara-bayar', 'pages::master.master-cara-bayar.master-cara-bayar')
+    Route::livewire('/master/cara-bayar', 'pages::master.master-klinik.master-cara-bayar.master-cara-bayar')
         ->name('master.cara-bayar');
 
-    Route::livewire('/master/group-akun', 'pages::master.master-group-akun.master-group-akun')
+    Route::livewire('/master/group-akun', 'pages::master.master-akuntansi.master-group-akun.master-group-akun')
         ->name('master.group-akun');
 
-    Route::livewire('/master/akun', 'pages::master.master-akun.master-akun')
+    Route::livewire('/master/akun', 'pages::master.master-akuntansi.master-akun.master-akun')
         ->name('master.akun');
 
-    Route::livewire('/master/tucico', 'pages::master.master-tucico.master-tucico')
+    Route::livewire('/master/tucico', 'pages::master.master-akuntansi.master-tucico.master-tucico')
         ->name('master.tucico');
 
-    Route::livewire('/master/konf-akun-trans', 'pages::master.master-konf-akun-trans.master-konf-akun-trans')
+    Route::livewire('/master/konf-akun-trans', 'pages::master.master-akuntansi.master-konf-akun-trans.master-konf-akun-trans')
         ->name('master.konf-akun-trans');
 
-    Route::livewire('/master/cara-keluar', 'pages::master.master-cara-keluar.master-cara-keluar')
+    Route::livewire('/master/cara-keluar', 'pages::master.master-klinik.master-cara-keluar.master-cara-keluar')
         ->name('master.cara-keluar');
 
-    Route::livewire('/master/procedure', 'pages::master.master-procedure.master-procedure')
+    Route::livewire('/master/procedure', 'pages::master.master-klinik.master-procedure.master-procedure')
         ->name('master.procedure');
 
-    Route::livewire('/master/parameter', 'pages::master.master-parameter.master-parameter')
+    Route::livewire('/master/parameter', 'pages::master.master-klinik.master-parameter.master-parameter')
         ->name('master.parameter');
 
-    Route::livewire('/master/kemasan', 'pages::master.master-kemasan.master-kemasan')
+    Route::livewire('/master/kemasan', 'pages::master.master-apotek.master-kemasan.master-kemasan')
         ->name('master.kemasan');
 
     // ===========================================
     // MASTER WILAYAH RS (RSMST_*)
     // ===========================================
-    Route::livewire('/master/provinsi', 'pages::master.master-provinsi.master-provinsi')
+    Route::livewire('/master/provinsi', 'pages::master.master-wilayah.master-provinsi.master-provinsi')
         ->name('master.provinsi');
 
-    Route::livewire('/master/kabupaten', 'pages::master.master-kabupaten.master-kabupaten')
+    Route::livewire('/master/kabupaten', 'pages::master.master-wilayah.master-kabupaten.master-kabupaten')
         ->name('master.kabupaten');
 
-    Route::livewire('/master/kecamatan', 'pages::master.master-kecamatan.master-kecamatan')
+    Route::livewire('/master/kecamatan', 'pages::master.master-wilayah.master-kecamatan.master-kecamatan')
         ->name('master.kecamatan');
 
-    Route::livewire('/master/desa', 'pages::master.master-desa.master-desa')
+    Route::livewire('/master/desa', 'pages::master.master-wilayah.master-desa.master-desa')
         ->name('master.desa');
 
-    Route::livewire('/master/jasa-dokter', 'pages::master.master-jasa-dokter.master-jasa-dokter')
+    Route::livewire('/master/jasa-dokter', 'pages::master.master-tarif.master-jasa-dokter.master-jasa-dokter')
         ->name('master.jasa-dokter');
 
-    Route::livewire('/master/jasa-karyawan', 'pages::master.master-jasa-karyawan.master-jasa-karyawan')
+    Route::livewire('/master/jasa-karyawan', 'pages::master.master-tarif.master-jasa-karyawan.master-jasa-karyawan')
         ->name('master.jasa-karyawan');
 
-    Route::livewire('/master/jasa-paramedis', 'pages::master.master-jasa-paramedis.master-jasa-paramedis')
+    Route::livewire('/master/jasa-paramedis', 'pages::master.master-tarif.master-jasa-paramedis.master-jasa-paramedis')
         ->name('master.jasa-paramedis');
 
     // ===========================================
     // MASTER TOKO / APOTEK (TKMST_*)
     // ===========================================
-    Route::livewire('/master/kategori', 'pages::master.master-kategori.master-kategori')
+    Route::livewire('/master/kategori', 'pages::master.master-apotek.master-kategori.master-kategori')
         ->name('master.kategori');
 
-    Route::livewire('/master/uom', 'pages::master.master-uom.master-uom')
+    Route::livewire('/master/uom', 'pages::master.master-apotek.master-uom.master-uom')
         ->name('master.uom');
 
-    Route::livewire('/master/kasir', 'pages::master.master-kasir.master-kasir')
+    Route::livewire('/master/kasir', 'pages::master.master-apotek.master-kasir.master-kasir')
         ->name('master.kasir');
 
-    Route::livewire('/master/prov-toko', 'pages::master.master-prov-toko.master-prov-toko')
+    Route::livewire('/master/prov-toko', 'pages::master.master-apotek.master-prov-toko.master-prov-toko')
         ->name('master.prov-toko');
 
-    Route::livewire('/master/kota-toko', 'pages::master.master-kota-toko.master-kota-toko')
+    Route::livewire('/master/kota-toko', 'pages::master.master-apotek.master-kota-toko.master-kota-toko')
         ->name('master.kota-toko');
 
-    Route::livewire('/master/supplier', 'pages::master.master-supplier.master-supplier')
+    Route::livewire('/master/supplier', 'pages::master.master-apotek.master-supplier.master-supplier')
         ->name('master.supplier');
 
-    Route::livewire('/master/customer', 'pages::master.master-customer.master-customer')
+    Route::livewire('/master/customer', 'pages::master.master-apotek.master-customer.master-customer')
         ->name('master.customer');
 
-    Route::livewire('/master/product', 'pages::master.master-product.master-product')
+    Route::livewire('/master/product', 'pages::master.master-apotek.master-product.master-product')
         ->name('master.product');
 
-    Route::livewire('/master/medik', 'pages::master.master-medik.master-medik')
+    Route::livewire('/master/medik', 'pages::master.master-klinik.master-medik.master-medik')
         ->name('master.medik');
 
-    Route::livewire('/master/others', 'pages::master.master-others.master-others')
+    Route::livewire('/master/others', 'pages::master.master-klinik.master-others.master-others')
         ->name('master.others');
 
-    Route::livewire('/master/radiologis', 'pages::master.master-radiologis.master-radiologis')
+    Route::livewire('/master/radiologis', 'pages::master.master-klinik.master-radiologis.master-radiologis')
         ->name('master.radiologis');
 
     // ===========================================
