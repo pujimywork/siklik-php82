@@ -62,6 +62,9 @@ Route::middleware(['auth'])->group(function () {
     Route::livewire('/master/tucico', 'pages::master.master-tucico.master-tucico')
         ->name('master.tucico');
 
+    Route::livewire('/master/konf-akun-trans', 'pages::master.master-konf-akun-trans.master-konf-akun-trans')
+        ->name('master.konf-akun-trans');
+
     Route::livewire('/master/cara-keluar', 'pages::master.master-cara-keluar.master-cara-keluar')
         ->name('master.cara-keluar');
 

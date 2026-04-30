@@ -1,9 +1,10 @@
 <?php
 
 /**
- * LOV Group Akun — sumber: tkacc_gr_accountses where gra_status='1'.
+ * LOV Group Akun — sumber: tkacc_gr_accountses (5 group fixed: AKTIVA/HUTANG/EKUITAS/PENDAPATAN/BEBAN).
+ * Catatan: kolom gra_status di tabel ini = 'N' (Neraca) / 'L' (Laba-Rugi), bukan flag aktif.
  *
- * Payload: ['gra_id', 'gra_desc', 'dk_status']
+ * Payload: ['gra_id', 'gra_desc', 'dk_status', 'gra_status']
  */
 
 use Livewire\Component;
@@ -76,16 +77,16 @@ new class extends Component {
     protected function baseQuery(): \Illuminate\Database\Query\Builder
     {
         return DB::table('tkacc_gr_accountses')
-            ->select('gra_id', 'gra_desc', 'gra_status', 'dk_status')
-            ->where('gra_status', '1');
+            ->select('gra_id', 'gra_desc', 'gra_status', 'dk_status');
     }
 
     protected function buildPayload(object $r): array
     {
         return [
-            'gra_id'    => (string) $r->gra_id,
-            'gra_desc'  => (string) ($r->gra_desc ?? ''),
-            'dk_status' => (string) ($r->dk_status ?? ''),
+            'gra_id'     => (string) $r->gra_id,
+            'gra_desc'   => (string) ($r->gra_desc ?? ''),
+            'dk_status'  => (string) ($r->dk_status ?? ''),
+            'gra_status' => (string) ($r->gra_status ?? ''),
         ];
     }
 

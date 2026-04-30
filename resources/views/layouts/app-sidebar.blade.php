@@ -55,6 +55,7 @@
             ['label' => 'Master Group Akun',      'route' => 'master.group-akun'],
             ['label' => 'Master Akun',            'route' => 'master.akun'],
             ['label' => 'Master TUCICO',          'route' => 'master.tucico'],
+            ['label' => 'Master Konf. Akun Trx',  'route' => 'master.konf-akun-trans'],
         ],
         'Master Wilayah Pasien' => [
             ['label' => 'Master Provinsi',  'route' => 'master.provinsi'],

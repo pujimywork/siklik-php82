@@ -62,7 +62,6 @@ new class extends Component {
     {
         return DB::table('tkacc_gr_accountses')
             ->select('gra_id', 'gra_desc')
-            ->where('gra_status', '1')
             ->orderBy('gra_id')
             ->get();
     }
@@ -90,9 +89,17 @@ new class extends Component {
         }
         if ($this->filterKas === '1') {
             $q->where('a.kas_status', '1');
+        } elseif ($this->filterKas === '0') {
+            $q->where('a.kas_status', '0');
         }
 
         return $q->paginate($this->itemsPerPage);
+    }
+
+    public function resetFilters(): void
+    {
+        $this->reset(['searchKeyword', 'filterGroup', 'filterKas']);
+        $this->resetPage();
     }
 };
 ?>
@@ -114,25 +121,53 @@ new class extends Component {
         <div class="px-6 pt-2 pb-6">
 
             <div class="sticky z-30 px-4 py-3 bg-white border-b border-gray-200 top-20 dark:bg-gray-900 dark:border-gray-700">
-                <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                    <div class="flex flex-1 gap-2">
-                        <x-text-input type="text"
-                            wire:model.live.debounce.300ms="searchKeyword"
-                            placeholder="Cari akun..." class="flex-1 max-w-md" />
-                        <x-select-input wire:model.live="filterGroup" class="w-48">
-                            <option value="">— Semua Group —</option>
-                            @foreach ($this->groupOptions as $g)
-                                <option value="{{ $g->gra_id }}">{{ $g->gra_id }} — {{ $g->gra_desc }}</option>
-                            @endforeach
-                        </x-select-input>
-                        <x-select-input wire:model.live="filterKas" class="w-32">
-                            <option value="">Semua Tipe</option>
-                            <option value="1">Kas Saja</option>
-                        </x-select-input>
+                @php
+                    $filterActive = trim($searchKeyword) !== '' || $filterGroup !== '' || $filterKas !== '';
+                @endphp
+
+                <div class="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+
+                    <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
+                        <div class="w-full sm:w-72">
+                            <x-input-label for="searchKeyword" value="Cari" class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400" />
+                            <x-text-input id="searchKeyword" type="text"
+                                wire:model.live.debounce.300ms="searchKeyword"
+                                placeholder="Kode / nama akun / group..."
+                                class="block w-full" />
+                        </div>
+
+                        <div class="w-full sm:w-60">
+                            <x-input-label for="filterGroup" value="Group Akun" class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400" />
+                            <x-select-input id="filterGroup" wire:model.live="filterGroup" class="block w-full">
+                                <option value="">— Semua Group —</option>
+                                @foreach ($this->groupOptions as $g)
+                                    <option value="{{ $g->gra_id }}">{{ $g->gra_id }} — {{ $g->gra_desc }}</option>
+                                @endforeach
+                            </x-select-input>
+                        </div>
+
+                        <div class="w-full sm:w-44">
+                            <x-input-label for="filterKas" value="Tipe Akun" class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400" />
+                            <x-select-input id="filterKas" wire:model.live="filterKas" class="block w-full">
+                                <option value="">— Semua Tipe —</option>
+                                <option value="1">Akun Kas</option>
+                                <option value="0">Bukan Kas</option>
+                            </x-select-input>
+                        </div>
+
+                        @if ($filterActive)
+                            <div>
+                                <x-secondary-button type="button" wire:click="resetFilters" class="px-3 py-2 text-xs">
+                                    Reset Filter
+                                </x-secondary-button>
+                            </div>
+                        @endif
                     </div>
-                    <div class="flex items-center justify-end gap-2">
+
+                    <div class="flex items-end justify-end gap-2">
                         <div class="w-28">
-                            <x-select-input wire:model.live="itemsPerPage">
+                            <x-input-label for="itemsPerPage" value="Per Halaman" class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400" />
+                            <x-select-input id="itemsPerPage" wire:model.live="itemsPerPage" class="block w-full">
                                 <option value="5">5</option>
                                 <option value="10">10</option>
                                 <option value="15">15</option>

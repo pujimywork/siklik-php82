@@ -47,6 +47,7 @@ new class extends Component {
             $entry(['group' => 'Master Akuntansi', 'groupOrder' => 4, 'order' => 1, 'route' => 'master.group-akun', 'title' => 'Master Group Akun', 'desc' => 'Pengelompokan akun (Aktiva/Pasiva/Modal/Pendapatan/Biaya)',     'roles' => ['admin'], 'badge' => 'Akuntansi']),
             $entry(['group' => 'Master Akuntansi', 'groupOrder' => 4, 'order' => 2, 'route' => 'master.akun',       'title' => 'Master Akun',       'desc' => 'Chart of accounts (tkacc_accountses)',                          'roles' => ['admin'], 'badge' => 'Akuntansi']),
             $entry(['group' => 'Master Akuntansi', 'groupOrder' => 4, 'order' => 3, 'route' => 'master.tucico',     'title' => 'Master TUCICO',     'desc' => 'Pos kas transit non-transaksi (setoran/ambil kas)',             'roles' => ['admin'], 'badge' => 'Akuntansi']),
+            $entry(['group' => 'Master Akuntansi', 'groupOrder' => 4, 'order' => 4, 'route' => 'master.konf-akun-trans', 'title' => 'Master Konf. Akun Trx', 'desc' => 'Mapping akun-default per jenis transaksi (tkacc_confacctxns)', 'roles' => ['admin'], 'badge' => 'Akuntansi']),
 
             // ── Master Tarif Jasa ─────────────────────────────────────
             $entry(['group' => 'Master Tarif', 'groupOrder' => 2, 'order' => 1, 'route' => 'master.jasa-dokter',    'title' => 'Master Jasa Dokter',    'desc' => 'Tarif jasa dokter untuk billing',                'roles' => ['admin'], 'badge' => 'Tarif']),

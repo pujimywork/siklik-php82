@@ -17,37 +17,37 @@ new class extends Component {
 
     public function openCreate(): void
     {
-        $this->dispatch('master.group-akun.openCreate');
+        $this->dispatch('master.konf-akun-trans.openCreate');
     }
 
-    public function openEdit(string $graId): void
+    public function openEdit(string $confId): void
     {
-        $this->dispatch('master.group-akun.openEdit', graId: $graId);
+        $this->dispatch('master.konf-akun-trans.openEdit', confId: $confId);
     }
 
-    public function requestDelete(string $graId): void
+    public function requestDelete(string $confId): void
     {
-        $this->dispatch('master.group-akun.requestDelete', graId: $graId);
+        $this->dispatch('master.konf-akun-trans.requestDelete', confId: $confId);
     }
 
-    #[On('master.group-akun.saved')]
-    public function refreshAfterSaved(): void
-    {
-        $this->resetPage();
-    }
+    #[On('master.konf-akun-trans.saved')]
+    public function refreshAfterSaved(): void { $this->resetPage(); }
 
     #[Computed]
     public function rows()
     {
-        $q = DB::table('tkacc_gr_accountses')
-            ->select('gra_id', 'gra_desc', 'gra_status', 'dk_status')
-            ->orderBy('gra_id');
+        $q = DB::table('tkacc_confacctxns as c')
+            ->leftJoin('tkacc_accountses as a', 'a.acc_id', '=', 'c.acc_id')
+            ->select('c.conf_id', 'c.conf_desc', 'c.acc_id', 'a.acc_desc')
+            ->orderBy('c.conf_id');
 
         if (trim($this->searchKeyword) !== '') {
             $kw = mb_strtoupper(trim($this->searchKeyword));
             $q->where(function ($sub) use ($kw) {
-                $sub->whereRaw('UPPER(gra_id) LIKE ?', ["%{$kw}%"])
-                    ->orWhereRaw('UPPER(gra_desc) LIKE ?', ["%{$kw}%"]);
+                $sub->whereRaw('UPPER(c.conf_id) LIKE ?', ["%{$kw}%"])
+                    ->orWhereRaw('UPPER(c.conf_desc) LIKE ?', ["%{$kw}%"])
+                    ->orWhereRaw('UPPER(c.acc_id) LIKE ?', ["%{$kw}%"])
+                    ->orWhereRaw('UPPER(a.acc_desc) LIKE ?', ["%{$kw}%"]);
             });
         }
 
@@ -60,10 +60,13 @@ new class extends Component {
     <header class="bg-white shadow dark:bg-gray-800">
         <div class="w-full px-4 py-2 sm:px-6 lg:px-8">
             <h2 class="text-2xl font-bold leading-tight text-gray-900 dark:text-gray-100">
-                Master Group Akun
+                Master Konfigurasi Akun Transaksi
             </h2>
             <p class="text-sm text-gray-500 dark:text-gray-400">
-                Pengelompokan akun (mis. AKTIVA, PASIVA, MODAL, PENDAPATAN, BIAYA) — sumber: <span class="font-mono">tkacc_gr_accountses</span>.
+                Mapping akun-default per jenis transaksi. Sumber:
+                <span class="font-mono">tkacc_confacctxns</span>.
+                Tiap <em>CONF_ID</em> menunjuk ke satu <em>ACC_ID</em> di
+                <span class="font-mono">tkacc_accountses</span>.
             </p>
         </div>
     </header>
@@ -73,16 +76,14 @@ new class extends Component {
 
             <div class="sticky z-30 px-4 py-3 bg-white border-b border-gray-200 top-20 dark:bg-gray-900 dark:border-gray-700">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                    <div class="w-full lg:max-w-md">
-                        <x-input-label for="searchKeyword" value="Cari Group Akun" class="sr-only" />
-                        <x-text-input id="searchKeyword" type="text"
+                    <div class="flex flex-1 gap-2">
+                        <x-text-input type="text"
                             wire:model.live.debounce.300ms="searchKeyword"
-                            placeholder="Cari group akun..." class="block w-full" />
+                            placeholder="Cari konfigurasi (kode/desc/akun)..." class="flex-1 max-w-md" />
                     </div>
                     <div class="flex items-center justify-end gap-2">
                         <div class="w-28">
-                            <x-input-label for="itemsPerPage" value="Per halaman" class="sr-only" />
-                            <x-select-input id="itemsPerPage" wire:model.live="itemsPerPage">
+                            <x-select-input wire:model.live="itemsPerPage">
                                 <option value="5">5</option>
                                 <option value="10">10</option>
                                 <option value="15">15</option>
@@ -91,7 +92,7 @@ new class extends Component {
                             </x-select-input>
                         </div>
                         <x-primary-button type="button" wire:click="openCreate">
-                            + Tambah Group Akun
+                            + Tambah Konfigurasi
                         </x-primary-button>
                     </div>
                 </div>
@@ -102,47 +103,33 @@ new class extends Component {
                     <table class="min-w-full text-sm">
                         <thead class="sticky top-0 z-10 text-gray-600 bg-gray-50 dark:bg-gray-800 dark:text-gray-200">
                             <tr class="text-left">
-                                <th class="px-4 py-3 font-semibold">ID</th>
+                                <th class="px-4 py-3 font-semibold">CONF ID</th>
                                 <th class="px-4 py-3 font-semibold">DESKRIPSI</th>
-                                <th class="px-4 py-3 font-semibold w-28 text-center">DEBIT/KREDIT</th>
-                                <th class="px-4 py-3 font-semibold w-32 text-center">LAPORAN</th>
-                                <th class="px-4 py-3 font-semibold w-40">AKSI</th>
+                                <th class="px-4 py-3 font-semibold">ACC ID</th>
+                                <th class="px-4 py-3 font-semibold">NAMA AKUN</th>
+                                <th class="px-4 py-3 font-semibold w-44">AKSI</th>
                             </tr>
                         </thead>
                         <tbody class="text-gray-700 divide-y divide-gray-200 dark:divide-gray-700 dark:text-gray-200">
                             @forelse ($this->rows as $row)
-                                <tr wire:key="gr-akun-{{ $row->gra_id }}"
+                                <tr wire:key="conf-{{ $row->conf_id }}"
                                     class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
-                                    <td class="px-4 py-3 font-mono text-xs">{{ $row->gra_id }}</td>
-                                    <td class="px-4 py-3 font-semibold">{{ $row->gra_desc }}</td>
-                                    <td class="px-4 py-3 text-center">
-                                        @if ((string) $row->dk_status === 'D')
-                                            <span class="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">Debit</span>
-                                        @elseif ((string) $row->dk_status === 'K')
-                                            <span class="px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-700">Kredit</span>
-                                        @else
-                                            <span class="text-xs text-gray-400">{{ $row->dk_status ?: '—' }}</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-3 text-center">
-                                        @if ((string) $row->gra_status === 'N')
-                                            <span class="px-2 py-0.5 text-xs rounded-full bg-sky-100 text-sky-800">Neraca</span>
-                                        @elseif ((string) $row->gra_status === 'L')
-                                            <span class="px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800">Laba-Rugi</span>
-                                        @else
-                                            <span class="text-xs text-gray-400">{{ $row->gra_status ?: '—' }}</span>
-                                        @endif
+                                    <td class="px-4 py-3 font-mono text-xs">{{ $row->conf_id }}</td>
+                                    <td class="px-4 py-3">{{ $row->conf_desc ?: '—' }}</td>
+                                    <td class="px-4 py-3 font-mono text-xs">{{ $row->acc_id }}</td>
+                                    <td class="px-4 py-3 text-xs text-gray-600 dark:text-gray-300">
+                                        {{ $row->acc_desc ?: '—' }}
                                     </td>
                                     <td class="px-4 py-3">
-                                        <div class="flex flex-wrap gap-2">
+                                        <div class="flex flex-wrap gap-1">
                                             <x-secondary-button type="button"
-                                                wire:click="openEdit('{{ $row->gra_id }}')" class="px-2 py-1 text-xs">
+                                                wire:click="openEdit('{{ $row->conf_id }}')" class="px-2 py-1 text-xs">
                                                 Edit
                                             </x-secondary-button>
                                             <x-confirm-button variant="danger"
-                                                :action="'requestDelete(\'' . $row->gra_id . '\')'"
-                                                title="Hapus Group Akun"
-                                                message="Yakin hapus group {{ $row->gra_desc }}?"
+                                                :action="'requestDelete(\'' . $row->conf_id . '\')'"
+                                                title="Hapus Konfigurasi"
+                                                message="Yakin hapus konfigurasi {{ $row->conf_id }}?"
                                                 confirmText="Ya, hapus" cancelText="Batal"
                                                 class="px-2 py-1 text-xs">
                                                 Hapus
@@ -153,7 +140,7 @@ new class extends Component {
                             @empty
                                 <tr>
                                     <td colspan="5" class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
-                                        Data group akun tidak ditemukan.
+                                        Konfigurasi tidak ditemukan.
                                     </td>
                                 </tr>
                             @endforelse
@@ -165,7 +152,7 @@ new class extends Component {
                 </div>
             </div>
 
-            <livewire:pages::master.master-group-akun.master-group-akun-actions wire:key="master-group-akun-actions" />
+            <livewire:pages::master.master-konf-akun-trans.master-konf-akun-trans-actions wire:key="master-konf-akun-trans-actions" />
         </div>
     </div>
 </div>

@@ -17,7 +17,7 @@ new class extends Component {
     public array $form = [
         'gra_id'     => '',
         'gra_desc'   => '',
-        'gra_status' => '1',
+        'gra_status' => 'N',
         'dk_status'  => 'D',
     ];
 
@@ -48,7 +48,7 @@ new class extends Component {
         $this->form = [
             'gra_id'     => (string) $row->gra_id,
             'gra_desc'   => (string) ($row->gra_desc ?? ''),
-            'gra_status' => (string) ($row->gra_status ?? '1'),
+            'gra_status' => (string) ($row->gra_status ?? 'N'),
             'dk_status'  => (string) ($row->dk_status ?? 'D'),
         ];
 
@@ -84,7 +84,7 @@ new class extends Component {
                 ? 'required|string|max:25|regex:/^[A-Z0-9_-]+$/|unique:tkacc_gr_accountses,gra_id'
                 : 'required|string',
             'form.gra_desc'   => 'required|string|max:100',
-            'form.gra_status' => 'required|in:0,1',
+            'form.gra_status' => 'required|in:N,L',
             'form.dk_status'  => 'required|in:D,K',
         ];
 
@@ -95,13 +95,14 @@ new class extends Component {
             'form.gra_id.unique'   => 'ID Group Akun sudah digunakan.',
             'form.gra_desc.required' => 'Deskripsi wajib diisi.',
             'form.gra_desc.max'      => 'Deskripsi maksimal 100 karakter.',
+            'form.gra_status.in'     => 'Tipe laporan hanya boleh N (Neraca) atau L (Laba-Rugi).',
             'form.dk_status.in'      => 'Debit/Kredit hanya boleh D atau K.',
         ];
 
         $attributes = [
             'form.gra_id'     => 'ID Group',
             'form.gra_desc'   => 'Deskripsi',
-            'form.gra_status' => 'Status Aktif',
+            'form.gra_status' => 'Tipe Laporan',
             'form.dk_status'  => 'Debit/Kredit',
         ];
 
@@ -136,7 +137,7 @@ new class extends Component {
 
     private function resetForm(): void
     {
-        $this->form = ['gra_id' => '', 'gra_desc' => '', 'gra_status' => '1', 'dk_status' => 'D'];
+        $this->form = ['gra_id' => '', 'gra_desc' => '', 'gra_status' => 'N', 'dk_status' => 'D'];
         $this->resetValidation();
     }
 };
@@ -205,11 +206,14 @@ new class extends Component {
                                 <x-input-error :messages="$errors->get('form.dk_status')" class="mt-1" />
                             </div>
                             <div>
-                                <x-input-label value="Status" :required="true" />
+                                <x-input-label value="Tipe Laporan" :required="true" />
                                 <x-select-input wire:model.live="form.gra_status" class="w-full mt-1">
-                                    <option value="1">Aktif</option>
-                                    <option value="0">Non-aktif</option>
+                                    <option value="N">N — Neraca</option>
+                                    <option value="L">L — Laba-Rugi</option>
                                 </x-select-input>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    Aktiva/Hutang/Ekuitas → Neraca · Pendapatan/Beban → Laba-Rugi.
+                                </p>
                                 <x-input-error :messages="$errors->get('form.gra_status')" class="mt-1" />
                             </div>
                         </div>
