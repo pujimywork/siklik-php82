@@ -212,6 +212,9 @@ new class extends Component {
         <div class="w-full px-4 py-2 sm:px-6 lg:px-8">
             <h2 class="text-2xl font-bold leading-tight text-gray-900 dark:text-gray-100">
                 Laporan Laba Rugi
+                <span class="px-2 py-0.5 ml-2 text-xs font-medium rounded bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 align-middle">
+                    Beta · Masa Pengembangan
+                </span>
             </h2>
             <p class="text-sm text-gray-500 dark:text-gray-400">
                 Penjualan dikurangi HPP &amp; Biaya per bulan terpilih, plus akumulasi tahun berjalan (YTD).
@@ -221,7 +224,22 @@ new class extends Component {
     </header>
 
     <div class="w-full min-h-[calc(100vh-5rem-72px)] bg-white dark:bg-gray-800">
-        <div class="px-6 pt-2 pb-6">
+        <div class="px-6 pt-4 pb-6">
+            {{-- Notice masa pengembangan --}}
+            <div class="p-4 mb-4 border rounded-lg border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700">
+                <div class="flex items-start gap-3">
+                    <span class="text-xl leading-none">⚠️</span>
+                    <div class="flex-1 text-sm text-amber-900 dark:text-amber-100">
+                        <p class="font-semibold">Laporan ini masih dalam masa pengembangan — verifikasi manual sebelum dipakai.</p>
+                        <ul class="mt-2 ml-5 space-y-0.5 text-xs list-disc">
+                            <li><strong>HPP otomatis dari pergerakan stok belum reliabel</strong> — stock opname belum rutin & ada potensi selisih input barang masuk/keluar (penamaan produk mirip). Pakai <em>toggle "Override HPP Manual"</em> di bawah kalau tahu HPP fisik yang benar.</li>
+                            <li><strong>Saldo awal akun 2026</strong> di <span class="font-mono">tktxn_saldoawalakuns</span> belum lengkap — belum mempengaruhi LR (LR cuma pakai arus periode), tapi mempengaruhi Neraca.</li>
+                            <li>Penjualan &amp; Biaya non-stok (gaji, listrik, dll) sudah benar; yang perlu kehati-hatian adalah HPP dan akun yang berasal dari movement persediaan.</li>
+                            <li>Sumber data: <span class="font-mono">tkview_accounts_labarugi</span>. Section &amp; mapping akun: template <span class="font-mono">L1</span> di <span class="font-mono">tkacc_temaccountes</span>.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
 
             <div class="sticky z-30 px-4 py-3 bg-white border-b border-gray-200 top-20 dark:bg-gray-900 dark:border-gray-700">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">

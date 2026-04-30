@@ -4,96 +4,104 @@
     /**
      * Sidebar menu definition.
      *
-     * Struktur:
-     *   'Group Label' => [
-     *       ['label' => 'Submenu', 'route' => 'route.name'],
-     *       ...
-     *   ]
+     * Struktur per submenu:
+     *   ['label' => '...', 'route' => 'route.name', 'roles' => ['admin', 'tu', ...]]
      *
-     * Submenu yang route-nya tidak terdaftar otomatis di-skip (Route::has check).
+     * - 'roles' kosong/missing  → semua user yg login bisa lihat
+     * - Submenu yg route-nya tidak terdaftar otomatis di-skip
+     * - Group header otomatis hilang kalau semua submenu ke-filter habis
      */
     $menus = [
         'Master Klinik' => [
-            ['label' => 'Master Pasien',          'route' => 'master.pasien'],
-            ['label' => 'Master Dokter',          'route' => 'master.dokter'],
-            ['label' => 'Master Poli',            'route' => 'master.poli'],
-            ['label' => 'Master Diagnosa',        'route' => 'master.diagnosa'],
-            ['label' => 'Master Prosedur',        'route' => 'master.procedure'],
-            ['label' => 'Master Radiologi',       'route' => 'master.radiologis'],
-            ['label' => 'Master Lain-lain',       'route' => 'master.others'],
-            ['label' => 'Master Agama',           'route' => 'master.agama'],
-            ['label' => 'Master Pendidikan',      'route' => 'master.pendidikan'],
-            ['label' => 'Master Pekerjaan',       'route' => 'master.pekerjaan'],
-            ['label' => 'Master Tipe Klaim',      'route' => 'master.klaim'],
-            ['label' => 'Master Cara Masuk',      'route' => 'master.cara-masuk'],
-            ['label' => 'Master Cara Bayar',      'route' => 'master.cara-bayar'],
-            ['label' => 'Master Cara Keluar',     'route' => 'master.cara-keluar'],
-            ['label' => 'Master Parameter',       'route' => 'master.parameter'],
-            ['label' => 'Master Alat Medis',      'route' => 'master.medik'],
-            ['label' => 'Master Ref BPJS',        'route' => 'master.ref-bpjs'],
+            ['label' => 'Master Pasien',          'route' => 'master.pasien',          'roles' => ['admin', 'mr']],
+            ['label' => 'Master Dokter',          'route' => 'master.dokter',          'roles' => ['admin']],
+            ['label' => 'Master Poli',            'route' => 'master.poli',            'roles' => ['admin']],
+            ['label' => 'Master Diagnosa',        'route' => 'master.diagnosa',        'roles' => ['admin']],
+            ['label' => 'Master Prosedur',        'route' => 'master.procedure',       'roles' => ['admin']],
+            ['label' => 'Master Radiologi',       'route' => 'master.radiologis',      'roles' => ['admin']],
+            ['label' => 'Master Lain-lain',       'route' => 'master.others',          'roles' => ['admin']],
+            ['label' => 'Master Agama',           'route' => 'master.agama',           'roles' => ['admin']],
+            ['label' => 'Master Pendidikan',      'route' => 'master.pendidikan',      'roles' => ['admin']],
+            ['label' => 'Master Pekerjaan',       'route' => 'master.pekerjaan',       'roles' => ['admin']],
+            ['label' => 'Master Tipe Klaim',      'route' => 'master.klaim',           'roles' => ['admin']],
+            ['label' => 'Master Cara Masuk',      'route' => 'master.cara-masuk',      'roles' => ['admin']],
+            ['label' => 'Master Cara Bayar',      'route' => 'master.cara-bayar',      'roles' => ['admin']],
+            ['label' => 'Master Cara Keluar',     'route' => 'master.cara-keluar',     'roles' => ['admin']],
+            ['label' => 'Master Parameter',       'route' => 'master.parameter',       'roles' => ['admin']],
+            ['label' => 'Master Alat Medis',      'route' => 'master.medik',           'roles' => ['admin']],
+            ['label' => 'Master Ref BPJS',        'route' => 'master.ref-bpjs',        'roles' => ['admin']],
         ],
         'Master Tarif Jasa' => [
-            ['label' => 'Master Jasa Dokter',     'route' => 'master.jasa-dokter'],
-            ['label' => 'Master Jasa Karyawan',   'route' => 'master.jasa-karyawan'],
-            ['label' => 'Master Jasa Paramedis',  'route' => 'master.jasa-paramedis'],
+            ['label' => 'Master Jasa Dokter',     'route' => 'master.jasa-dokter',     'roles' => ['admin']],
+            ['label' => 'Master Jasa Karyawan',   'route' => 'master.jasa-karyawan',   'roles' => ['admin']],
+            ['label' => 'Master Jasa Paramedis',  'route' => 'master.jasa-paramedis',  'roles' => ['admin']],
         ],
         'Master Laboratorium' => [
-            ['label' => 'Master Lab',             'route' => 'master.laborat'],
+            ['label' => 'Master Lab',             'route' => 'master.laborat',         'roles' => ['admin', 'laboratorium']],
         ],
         'Master Apotek' => [
-            ['label' => 'Master Produk Apotek',   'route' => 'master.product'],
-            ['label' => 'Master Kategori Produk', 'route' => 'master.kategori'],
-            ['label' => 'Master Satuan (UOM)',    'route' => 'master.uom'],
-            ['label' => 'Master Kemasan',         'route' => 'master.kemasan'],
-            ['label' => 'Master Kasir',           'route' => 'master.kasir'],
-            ['label' => 'Master Supplier',        'route' => 'master.supplier'],
-            ['label' => 'Master Customer',        'route' => 'master.customer'],
-            ['label' => 'Provinsi (Apotek)',      'route' => 'master.prov-toko'],
-            ['label' => 'Kota (Apotek)',          'route' => 'master.kota-toko'],
+            ['label' => 'Master Produk Apotek',   'route' => 'master.product',         'roles' => ['admin', 'apotek']],
+            ['label' => 'Master Kategori Produk', 'route' => 'master.kategori',        'roles' => ['admin', 'apotek']],
+            ['label' => 'Master Satuan (UOM)',    'route' => 'master.uom',             'roles' => ['admin', 'apotek']],
+            ['label' => 'Master Kemasan',         'route' => 'master.kemasan',         'roles' => ['admin', 'apotek']],
+            ['label' => 'Master Kasir',           'route' => 'master.kasir',           'roles' => ['admin', 'apotek']],
+            ['label' => 'Master Supplier',        'route' => 'master.supplier',        'roles' => ['admin', 'apotek']],
+            ['label' => 'Master Customer',        'route' => 'master.customer',        'roles' => ['admin', 'apotek']],
+            ['label' => 'Provinsi (Apotek)',      'route' => 'master.prov-toko',       'roles' => ['admin', 'apotek']],
+            ['label' => 'Kota (Apotek)',          'route' => 'master.kota-toko',       'roles' => ['admin', 'apotek']],
         ],
         'Master Akuntansi' => [
-            ['label' => 'Master Group Akun',      'route' => 'master.group-akun'],
-            ['label' => 'Master Akun',            'route' => 'master.akun'],
-            ['label' => 'Master TUCICO',          'route' => 'master.tucico'],
-            ['label' => 'Master Konf. Akun Trx',  'route' => 'master.konf-akun-trans'],
+            ['label' => 'Master Group Akun',      'route' => 'master.group-akun',      'roles' => ['admin']],
+            ['label' => 'Master Akun',            'route' => 'master.akun',            'roles' => ['admin']],
+            ['label' => 'Master TUCICO',          'route' => 'master.tucico',          'roles' => ['admin']],
+            ['label' => 'Master Konf. Akun Trx',  'route' => 'master.konf-akun-trans', 'roles' => ['admin']],
         ],
         'Master Wilayah Pasien' => [
-            ['label' => 'Master Provinsi',  'route' => 'master.provinsi'],
-            ['label' => 'Master Kabupaten', 'route' => 'master.kabupaten'],
-            ['label' => 'Master Kecamatan', 'route' => 'master.kecamatan'],
-            ['label' => 'Master Desa',      'route' => 'master.desa'],
+            ['label' => 'Master Provinsi',  'route' => 'master.provinsi',              'roles' => ['admin']],
+            ['label' => 'Master Kabupaten', 'route' => 'master.kabupaten',             'roles' => ['admin']],
+            ['label' => 'Master Kecamatan', 'route' => 'master.kecamatan',             'roles' => ['admin']],
+            ['label' => 'Master Desa',      'route' => 'master.desa',                  'roles' => ['admin']],
         ],
         'Rawat Jalan' => [
-            ['label' => 'Daftar RJ',          'route' => 'rawat-jalan.daftar'],
-            ['label' => 'Antrian Apotek',     'route' => 'transaksi.rj.antrian-apotek-rj'],
+            ['label' => 'Daftar RJ',          'route' => 'rawat-jalan.daftar',                  'roles' => ['admin', 'mr', 'perawat', 'dokter']],
+            ['label' => 'Antrian Apotek',     'route' => 'transaksi.rj.antrian-apotek-rj',      'roles' => ['admin', 'apotek']],
         ],
         'Apotek & Penunjang' => [
-            ['label' => 'Antrian Apotek',     'route' => 'transaksi.apotek'],
-            ['label' => 'Laboratorium',       'route' => 'transaksi.penunjang.laborat'],
-            ['label' => 'Penerimaan Medis',   'route' => 'gudang.penerimaan-medis'],
-            ['label' => 'Kartu Stock',        'route' => 'gudang.kartu-stock'],
+            ['label' => 'Antrian Apotek',     'route' => 'transaksi.apotek',                'roles' => ['admin', 'apotek']],
+            ['label' => 'Laboratorium',       'route' => 'transaksi.penunjang.laborat',     'roles' => ['admin', 'laboratorium']],
+            ['label' => 'Penerimaan Medis',   'route' => 'gudang.penerimaan-medis',         'roles' => ['admin', 'apotek']],
+            ['label' => 'Kartu Stock',        'route' => 'gudang.kartu-stock',              'roles' => ['admin', 'apotek']],
         ],
         'Keuangan' => [
-            ['label' => 'Penerimaan Kas TU',     'route' => 'keuangan.penerimaan-kas-tu'],
-            ['label' => 'Pengeluaran Kas TU',    'route' => 'keuangan.pengeluaran-kas-tu'],
-            ['label' => 'Pembayaran Piutang RJ', 'route' => 'keuangan.pembayaran-piutang-rj'],
-            ['label' => 'Pembayaran Hutang PBF', 'route' => 'keuangan.pembayaran-hutang-pbf'],
-            ['label' => 'Saldo Kas',             'route' => 'keuangan.saldo-kas'],
-            ['label' => 'Buku Besar',            'route' => 'keuangan.buku-besar'],
-            ['label' => 'Laporan Laba Rugi',     'route' => 'keuangan.laba-rugi'],
-            ['label' => 'Laporan Neraca',        'route' => 'keuangan.neraca'],
+            ['label' => 'Penerimaan Kas TU',     'route' => 'keuangan.penerimaan-kas-tu',     'roles' => ['admin', 'tu']],
+            ['label' => 'Pengeluaran Kas TU',    'route' => 'keuangan.pengeluaran-kas-tu',    'roles' => ['admin', 'tu']],
+            ['label' => 'Pembayaran Piutang RJ', 'route' => 'keuangan.pembayaran-piutang-rj', 'roles' => ['admin', 'tu', 'kasir']],
+            ['label' => 'Pembayaran Hutang PBF', 'route' => 'keuangan.pembayaran-hutang-pbf', 'roles' => ['admin', 'tu']],
+            ['label' => 'Saldo Kas',             'route' => 'keuangan.saldo-kas',             'roles' => ['admin', 'tu', 'kasir']],
+            ['label' => 'Buku Besar',            'route' => 'keuangan.buku-besar',            'roles' => ['admin', 'tu']],
+            ['label' => 'Laporan Laba Rugi',     'route' => 'keuangan.laba-rugi',             'roles' => ['admin', 'tu']],
+            ['label' => 'Laporan Neraca',        'route' => 'keuangan.neraca',                'roles' => ['admin', 'tu']],
         ],
         'Database Monitor' => [
-            ['label' => 'Monitoring Dashboard', 'route' => 'database-monitor.monitoring-dashboard'],
-            ['label' => 'Mount Control',        'route' => 'database-monitor.monitoring-mount-control'],
-            ['label' => 'User Control',         'route' => 'database-monitor.user-control'],
-            ['label' => 'Role Control',         'route' => 'database-monitor.role-control'],
+            ['label' => 'Monitoring Dashboard', 'route' => 'database-monitor.monitoring-dashboard',     'roles' => ['admin']],
+            ['label' => 'Mount Control',        'route' => 'database-monitor.monitoring-mount-control', 'roles' => ['admin']],
+            ['label' => 'User Control',         'route' => 'database-monitor.user-control',             'roles' => ['admin']],
+            ['label' => 'Role Control',         'route' => 'database-monitor.role-control',             'roles' => ['admin']],
         ],
     ];
 
-    // Filter menu yang route-nya belum terdaftar
+    // Role user (lowercase) — mengikuti pattern dashboard.
+    $userRoles = auth()->check()
+        ? auth()->user()->getRoleNames()->map(fn($r) => strtolower($r))->values()->toArray()
+        : [];
+
+    // Filter: route harus terdaftar AND (roles kosong OR ada irisan dgn role user)
     $menus = collect($menus)
-        ->map(fn ($subs) => array_values(array_filter($subs, fn ($s) => \Illuminate\Support\Facades\Route::has($s['route']))))
+        ->map(fn ($subs) => array_values(array_filter($subs, function ($s) use ($userRoles) {
+            if (! \Illuminate\Support\Facades\Route::has($s['route'])) return false;
+            if (empty($s['roles'] ?? [])) return true;
+            return !empty(array_intersect($userRoles, $s['roles']));
+        })))
         ->filter(fn ($subs) => count($subs) > 0)
         ->all();
 @endphp

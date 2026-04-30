@@ -197,6 +197,9 @@ new class extends Component {
         <div class="w-full px-4 py-2 sm:px-6 lg:px-8">
             <h2 class="text-2xl font-bold leading-tight text-gray-900 dark:text-gray-100">
                 Laporan Neraca
+                <span class="px-2 py-0.5 ml-2 text-xs font-medium rounded bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 align-middle">
+                    Beta · Masa Pengembangan
+                </span>
             </h2>
             <p class="text-sm text-gray-500 dark:text-gray-400">
                 Posisi keuangan per tanggal cutoff. Aktiva harus seimbang dengan Hutang + Ekuitas + Laba Tahun Berjalan.
@@ -206,7 +209,23 @@ new class extends Component {
     </header>
 
     <div class="w-full min-h-[calc(100vh-5rem-72px)] bg-white dark:bg-gray-800">
-        <div class="px-6 pt-2 pb-6">
+        <div class="px-6 pt-4 pb-6">
+            {{-- Notice masa pengembangan --}}
+            <div class="p-4 mb-4 border rounded-lg border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700">
+                <div class="flex items-start gap-3">
+                    <span class="text-xl leading-none">⚠️</span>
+                    <div class="flex-1 text-sm text-amber-900 dark:text-amber-100">
+                        <p class="font-semibold">Laporan ini masih dalam masa pengembangan — verifikasi manual sebelum dipakai.</p>
+                        <ul class="mt-2 ml-5 space-y-0.5 text-xs list-disc">
+                            <li><strong>Saldo awal tahun di <span class="font-mono">tktxn_saldoawalakuns</span> belum lengkap</strong> — banyak akun (Modal, Persediaan, Piutang awal, dll) masih nol. Akibatnya Aktiva ≠ Pasiva. Update via menu <em>Saldo Kas → Edit Saldo</em> (admin) atau jurnal modal awal.</li>
+                            <li><strong>Laba Tahun Berjalan</strong> diambil dari Laba-Rugi YTD (Penjualan − HPP − Biaya). Jika HPP otomatis belum akurat (stock opname belum rutin), Laba bisa salah → Ekuitas ikut salah.</li>
+                            <li><strong>Persediaan barang (akun 1141, dll)</strong> mengikuti pergerakan stok — masih ada potensi selisih akibat human error input penerimaan / pengeluaran (penamaan produk mirip).</li>
+                            <li>Validasi <em>"Selisih ⚠"</em> di kanan atas akan flag kalau tidak balance — pakai itu sebagai pemandu mencari root cause data yang masih kurang.</li>
+                            <li>Sumber data: <span class="font-mono">tkview_accounts_neraca</span> + <span class="font-mono">tktxn_saldoawalakuns</span>. Mapping section: template <span class="font-mono">N1</span>.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
 
             <div class="sticky z-30 px-4 py-3 bg-white border-b border-gray-200 top-20 dark:bg-gray-900 dark:border-gray-700">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
