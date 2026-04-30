@@ -181,6 +181,9 @@ Route::middleware(['auth'])->group(function () {
     Route::livewire('/keuangan/pembayaran-hutang-pbf', 'pages::transaksi.keuangan.pembayaran-hutang-pbf.pembayaran-hutang-pbf')
         ->name('keuangan.pembayaran-hutang-pbf');
 
+    Route::livewire('/keuangan/saldo-kas', 'pages::transaksi.keuangan.saldo-kas.saldo-kas')
+        ->name('keuangan.saldo-kas');
+
     // ===========================================
     // GUDANG - PENERIMAAN MEDIS
     // ===========================================

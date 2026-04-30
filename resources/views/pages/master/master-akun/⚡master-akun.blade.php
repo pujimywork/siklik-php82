@@ -110,8 +110,8 @@ new class extends Component {
                 Master Akun
             </h2>
             <p class="text-sm text-gray-500 dark:text-gray-400">
-                Chart of accounts (akun pusat) — sumber tabel: <span class="font-mono">tkacc_accountses</span>.
-                Akun bertipe <em>Kas</em> dipakai oleh kasir &amp; cara bayar.
+                Daftar pos akun untuk pencatatan transaksi keuangan (Kas, Piutang, Pendapatan, Beban, dsb).
+                Akun bertanda <em>Kas</em> otomatis muncul sebagai pilihan di kasir &amp; metode cara bayar.
             </p>
         </div>
     </header>

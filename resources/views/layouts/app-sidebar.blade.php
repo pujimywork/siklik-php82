@@ -78,6 +78,7 @@
             ['label' => 'Pengeluaran Kas TU',    'route' => 'keuangan.pengeluaran-kas-tu'],
             ['label' => 'Pembayaran Piutang RJ', 'route' => 'keuangan.pembayaran-piutang-rj'],
             ['label' => 'Pembayaran Hutang PBF', 'route' => 'keuangan.pembayaran-hutang-pbf'],
+            ['label' => 'Saldo Kas',             'route' => 'keuangan.saldo-kas'],
         ],
         'Database Monitor' => [
             ['label' => 'Monitoring Dashboard', 'route' => 'database-monitor.monitoring-dashboard'],
