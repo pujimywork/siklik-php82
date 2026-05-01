@@ -152,7 +152,9 @@ new class extends Component {
     {
         return [
             'cbId' => ['required', 'string', 'exists:tkacc_carabayars,cb_id'],
-            'bayar' => ['required', 'integer', 'min:1'],
+            // bayar boleh 0 untuk skenario "hutang penuh" (Dr Piutang Cr Pendapatan).
+            // Selisih (rjSisa - bayar) tetap diproses sbg cicilan/hutang oleh logic post.
+            'bayar' => ['required', 'integer', 'min:0'],
             'rjDiskon' => ['nullable', 'integer', 'min:0'],
         ];
     }
@@ -162,8 +164,8 @@ new class extends Component {
         return [
             'cbId.required' => 'Cara bayar belum dipilih.',
             'cbId.exists'   => 'Cara bayar tidak valid.',
-            'bayar.required' => 'Kolom Bayar masih kosong.',
-            'bayar.min' => 'Nominal bayar harus lebih dari 0.',
+            'bayar.required' => 'Kolom Bayar masih kosong (isi 0 untuk hutang penuh).',
+            'bayar.min' => 'Nominal bayar tidak boleh negatif.',
         ];
     }
 
@@ -261,8 +263,10 @@ new class extends Component {
                 ];
 
                 if ($bayar < $dspTotalAll) {
-                    // CICILAN
-                    DB::table('rstxn_rjcashins')->insert(array_merge($cashRow, ['rjc_nominal' => $bayar]));
+                    // CICILAN / HUTANG PENUH (bayar=0 → cashin tidak di-insert)
+                    if ($bayar > 0) {
+                        DB::table('rstxn_rjcashins')->insert(array_merge($cashRow, ['rjc_nominal' => $bayar]));
+                    }
                     DB::table('rstxn_rjhdrs')
                         ->where('rj_no', $this->rjNo)
                         ->update([
@@ -304,9 +308,14 @@ new class extends Component {
             $this->kembalian = 0;
             $this->incrementVersion('kasir-rj');
 
-            $msg = $newTxnStatus === 'L' ? 'Pembayaran lunas berhasil disimpan.' : 'Pembayaran sebagian (cicilan) berhasil disimpan.';
+            $msg = match (true) {
+                $newTxnStatus === 'L'              => 'Pembayaran lunas berhasil disimpan.',
+                $bayar === 0                       => 'Transaksi disimpan sebagai hutang penuh.',
+                default                            => 'Pembayaran sebagian (cicilan) berhasil disimpan.',
+            };
 
             $this->dispatch('toast', type: 'success', message: $msg);
+            // Parent (administrasi-rj) listen ke event ini & re-broadcast sync-lock ke siblings.
             $this->dispatch('administrasi-rj.updated');
         } catch (\RuntimeException $e) {
             $this->dispatch('toast', type: 'error', message: $e->getMessage());
@@ -378,6 +387,7 @@ new class extends Component {
             $this->incrementVersion('kasir-rj');
 
             $this->dispatch('toast', type: 'success', message: 'Transaksi berhasil dibatalkan.');
+            // Parent (administrasi-rj) listen ke event ini & re-broadcast sync-lock ke siblings.
             $this->dispatch('administrasi-rj.updated');
         } catch (\RuntimeException $e) {
             $this->dispatch('toast', type: 'error', message: $e->getMessage());

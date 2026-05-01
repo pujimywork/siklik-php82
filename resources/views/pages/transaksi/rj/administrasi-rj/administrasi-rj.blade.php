@@ -223,6 +223,11 @@ new class extends Component {
 
             $this->dispatch('toast', type: 'success', message: 'Administrasi berhasil disimpan.');
             $this->sumAll();
+
+            // Self-lock parent saja (RS Admin / Admin OB / Uang Periksa). Sibling
+            // form tidak di-propagate — kasir masih perlu kerja sampai Post Transaksi.
+            $this->isFormLocked = true;
+            $this->incrementVersion('modal');
         } catch (\RuntimeException $e) {
             $this->dispatch('toast', type: 'error', message: $e->getMessage());
         } catch (\Exception $e) {
@@ -335,6 +340,11 @@ new class extends Component {
             $this->isFormLocked = false;
         }
 
+        // Single dispatcher ke siblings (jasa-medis/jasa-dokter/jasa-karyawan/lab/radiologi)
+        // — re-check status & sync lock state. Cegah cross-talk antar sibling.
+        $this->dispatch('rj.administrasi-selesai', rjNo: $this->rjNo);
+
+        // Refresh data (3 child yg butuh re-fetch listing setelah update)
         $this->dispatch('administrasi-obat-rj.updated');
         $this->dispatch('administrasi-lain-lain-rj.updated');
         $this->dispatch('administrasi-kasir-rj.updated');
