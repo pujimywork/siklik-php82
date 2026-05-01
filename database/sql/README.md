@@ -92,6 +92,19 @@ for f in database/sql/[0-9]*.sql; do
 done
 ```
 
+### Pakai bundle file (rekomendasi)
+Dua bundle `idempotent` yang bisa di-run berulang kali tanpa rusak:
+
+```bash
+# 🔧 + 🩺  Mandatory — Laravel system + klinik pratama (file 01,02,09,11,12,13)
+sqlplus siklik/siklik@//<host>:1521/<service> @database/sql/install_bundle.sql
+
+# 🌐 Optional — SatuSehat (LOINC + SNOMED, file 03–08)
+sqlplus siklik/siklik@//<host>:1521/<service> @database/sql/install_bundle_satusehat.sql
+```
+
+Bundle SatuSehat ✅ aman di-run setelah `install_bundle.sql` (atau independen, asal tabel core siklik `LBMST_CLABITEMS` & `RSMST_RADIOLOGIS` sudah ada).
+
 ### Pakai DBeaver / SQL Developer
 Buka file → execute. Pastikan mode "Execute SQL Script" (pakai `;` & `/` separator).
 
