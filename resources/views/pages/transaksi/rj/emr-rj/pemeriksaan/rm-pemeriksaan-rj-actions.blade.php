@@ -6,6 +6,7 @@ use App\Http\Traits\WithRenderVersioning\WithRenderVersioningTrait;
 use App\Http\Traits\WithValidationToast\WithValidationToastTrait;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Computed;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Storage;
 
@@ -46,6 +47,31 @@ new class extends Component {
         $default = $this->getDefaultPemeriksaan();
         $current = $this->dataDaftarPoliRJ['pemeriksaan'] ?? [];
         $this->dataDaftarPoliRJ['pemeriksaan'] = array_replace_recursive($default, $current);
+    }
+
+    /* -------------------------
+     | Lookup kode kesadaran (BPJS PCare) → nama. Pakai cache ref_bpjs_table
+     | kategori 'Kesadaran' (case-insensitive). Format BPJS: {kdSadar, nmSadar}.
+     | Dipakai di umum-tab-dokter-view (read-only) untuk display kode + nama.
+     * ------------------------- */
+    #[Computed]
+    public function kesadaranLabels(): array
+    {
+        $json = DB::table('ref_bpjs_table')
+            ->whereRaw('upper(ref_keterangan) = upper(?)', ['Kesadaran'])
+            ->value('ref_json');
+
+        if (!$json) return [];
+
+        $list = json_decode($json, true);
+        if (!is_array($list)) return [];
+
+        return collect($list)->mapWithKeys(function ($it) {
+            $arr = (array) $it;
+            $kd  = (string) ($arr['kdSadar'] ?? $arr['kdKesadaran'] ?? $arr['kode'] ?? '');
+            $nm  = (string) ($arr['nmSadar'] ?? $arr['nmKesadaran'] ?? $arr['nama'] ?? '');
+            return $kd === '' ? [] : [$kd => $nm];
+        })->all();
     }
 
     /* ===============================

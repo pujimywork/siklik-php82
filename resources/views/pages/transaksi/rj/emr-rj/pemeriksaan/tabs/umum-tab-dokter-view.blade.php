@@ -3,23 +3,31 @@
     @php
         $tv  = $dataDaftarPoliRJ['pemeriksaan']['tandaVital'] ?? [];
         $nut = $dataDaftarPoliRJ['pemeriksaan']['nutrisi']    ?? [];
+
+        // Tingkat Kesadaran: kalau value-nya kode BPJS (mis. '01'), tampilkan
+        // nama dari cache ref_bpjs_table 'Kesadaran'. Kalau value teks panjang
+        // (legacy dari options form), tampilkan apa adanya.
+        $kdKes = (string) ($tv['tingkatKesadaran'] ?? '');
+        $kesLabels = $this->kesadaranLabels ?? [];
+        $nmKes = $kesLabels[$kdKes] ?? '';
+        $tingkatKesadaranDisplay = $nmKes !== '' ? $nmKes : ($kdKes !== '' ? $kdKes : '-');
     @endphp
 
     {{-- TANDA VITAL --}}
     <x-border-form :title="__('Tanda Vital')" :align="__('start')" :bgcolor="__('bg-gray-50')">
         <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6">
 
-            {{-- Row 1 --}}
-            <div class="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Keadaan Umum</span>
+            {{-- Row 1 — label kiri, value kanan (wrap kalau panjang) --}}
+            <div class="flex items-start justify-between gap-2 py-2 border-b border-gray-200 dark:border-gray-700">
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400 shrink-0">Keadaan Umum</span>
                 <span class="text-sm font-medium text-right text-gray-800 dark:text-gray-200">
                     {{ $tv['keadaanUmum'] ?? '-' }}
                 </span>
             </div>
-            <div class="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Tingkat Kesadaran</span>
+            <div class="flex items-start justify-between gap-2 py-2 border-b border-gray-200 dark:border-gray-700">
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400 shrink-0">Tingkat Kesadaran</span>
                 <span class="text-sm font-medium text-right text-gray-800 dark:text-gray-200">
-                    {{ $tv['tingkatKesadaran'] ?? '-' }}
+                    {{ $tingkatKesadaranDisplay }}
                 </span>
             </div>
 
