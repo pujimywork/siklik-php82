@@ -748,13 +748,13 @@ new class extends Component {
                 <div id="PenilaianRawatJalan" x-data="{ activeTab: 'Nyeri' }" class="w-full">
 
                     {{-- TAB NAVIGATION --}}
-                    <div class="w-full px-2 mb-2 border-b border-gray-200 dark:border-gray-700">
+                    <x-scrollable-tabs class="w-full px-2 mb-2 border-b border-gray-200 dark:border-gray-700">
                         <ul
-                            class="flex flex-wrap w-full -mb-px text-xs font-medium text-center text-gray-500 dark:text-gray-400">
+                            class="flex flex-nowrap whitespace-nowrap w-full -mb-px text-xs font-medium text-center text-gray-500 dark:text-gray-400">
                             @foreach (['Nyeri' => 'Nyeri', 'Risiko Jatuh' => 'Risiko Jatuh', 'Dekubitus' => 'Dekubitus', 'Gizi' => 'Gizi'] as $tab => $label)
                                 <li class="mr-2">
                                     <label
-                                        class="inline-block px-3 py-1.5 border-b-2 border-transparent rounded-t-lg cursor-pointer hover:text-gray-600 hover:border-gray-300"
+                                        class="inline-block px-4 py-2 border-b-2 border-transparent rounded-t-lg cursor-pointer hover:text-gray-600 hover:border-gray-300"
                                         :class="activeTab === '{{ $tab }}' ?
                                             'text-primary border-primary bg-gray-100' : ''"
                                         @click="activeTab = '{{ $tab }}'">
@@ -763,7 +763,7 @@ new class extends Component {
                                 </li>
                             @endforeach
                         </ul>
-                    </div>
+                    </x-scrollable-tabs>
 
                     {{-- TAB CONTENTS --}}
                     <div class="w-full p-2">

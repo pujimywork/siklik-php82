@@ -640,14 +640,14 @@ new class extends Component {
                                 <div x-data="{ activeTab: 'Umum' }">
 
                                     {{-- TAB NAVIGATION --}}
-                                    <div class="px-2 border-b border-gray-200 dark:border-gray-700">
+                                    <x-scrollable-tabs class="w-full px-2 mb-2 border-b border-gray-200 dark:border-gray-700">
                                         <ul
-                                            class="flex flex-wrap -mb-px text-xs font-medium text-center text-gray-500 dark:text-gray-400">
+                                            class="flex flex-nowrap whitespace-nowrap w-full -mb-px text-xs font-medium text-center text-gray-500 dark:text-gray-400">
 
                                             {{-- UMUM --}}
                                             <li class="mr-2">
                                                 <label
-                                                    class="inline-block p-4 border-b-2 border-transparent rounded-t-lg cursor-pointer hover:text-gray-600 hover:border-gray-300"
+                                                    class="inline-block px-4 py-2 border-b-2 border-transparent rounded-t-lg cursor-pointer hover:text-gray-600 hover:border-gray-300"
                                                     :class="activeTab === '{{ $dataDaftarPoliRJ['pemeriksaan']['umumTab'] ?? 'Umum' }}'
                                                         ?
                                                         'text-primary border-primary bg-gray-100' : ''"
@@ -659,7 +659,7 @@ new class extends Component {
                                             {{-- ANATOMI --}}
                                             <li class="mr-2">
                                                 <label
-                                                    class="inline-block p-4 border-b-2 border-transparent rounded-t-lg cursor-pointer hover:text-gray-600 hover:border-gray-300"
+                                                    class="inline-block px-4 py-2 border-b-2 border-transparent rounded-t-lg cursor-pointer hover:text-gray-600 hover:border-gray-300"
                                                     :class="activeTab === 'Anatomi' ?
                                                         'text-primary border-primary bg-gray-100' : ''"
                                                     @click="activeTab = 'Anatomi'">
@@ -670,7 +670,7 @@ new class extends Component {
                                             {{-- PELAYANAN PENUNJANG --}}
                                             <li class="mr-2">
                                                 <label
-                                                    class="inline-block p-4 border-b-2 border-transparent rounded-t-lg cursor-pointer hover:text-gray-600 hover:border-gray-300"
+                                                    class="inline-block px-4 py-2 border-b-2 border-transparent rounded-t-lg cursor-pointer hover:text-gray-600 hover:border-gray-300"
                                                     :class="activeTab === 'PenunjangHasil' ?
                                                         'text-primary border-primary bg-gray-100' : ''"
                                                     @click="activeTab = 'PenunjangHasil'">
@@ -681,7 +681,7 @@ new class extends Component {
                                             {{-- UPLOAD PENUNJANG --}}
                                             <li class="mr-2">
                                                 <label
-                                                    class="inline-block p-4 border-b-2 border-transparent rounded-t-lg cursor-pointer hover:text-gray-600 hover:border-gray-300"
+                                                    class="inline-block px-4 py-2 border-b-2 border-transparent rounded-t-lg cursor-pointer hover:text-gray-600 hover:border-gray-300"
                                                     :class="activeTab === 'UploadPenunjangHasil' ?
                                                         'text-primary border-primary bg-gray-100' : ''"
                                                     @click="activeTab = 'UploadPenunjangHasil'">
@@ -692,7 +692,7 @@ new class extends Component {
                                             {{-- HASIL PENUNJANG (semua kunjungan) --}}
                                             <li class="mr-2">
                                                 <label
-                                                    class="inline-flex items-center gap-2 p-4 border-b-2 border-transparent rounded-t-lg cursor-pointer hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300"
+                                                    class="inline-flex items-center gap-2 px-4 py-2 border-b-2 border-transparent rounded-t-lg cursor-pointer hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300"
                                                     :class="activeTab === 'HasilPenunjang' ?
                                                         'text-primary border-primary bg-gray-100 dark:bg-gray-800' : ''"
                                                     @click="activeTab = 'HasilPenunjang'">
@@ -707,7 +707,7 @@ new class extends Component {
                                             </li>
 
                                         </ul>
-                                    </div>
+                                    </x-scrollable-tabs>
 
                                     {{-- TAB CONTENTS --}}
                                     <div class="p-2 rounded-lg bg-gray-50 dark:bg-gray-800"
