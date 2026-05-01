@@ -21,8 +21,8 @@ new class extends Component {
     public ?int $rjNo = null;
     public array $dataDaftarPoliRJ = [];
 
-    // radio
-    public $suspekAkibatKerja;
+    // x-select Ya/Tidak (default Tidak)
+    public string $suspekAkibatKerja = 'Tidak';
 
     // renderVersions
     public array $renderVersions = [];
@@ -76,8 +76,8 @@ new class extends Component {
         // Initialize pemeriksaan data jika belum ada
         $this->dataDaftarPoliRJ['pemeriksaan'] ??= $this->getDefaultPemeriksaan();
 
-        // Sync radio button suspekAkibatKerja ke property terpisah
-        $this->suspekAkibatKerja = $this->dataDaftarPoliRJ['pemeriksaan']['suspekAkibatKerja']['suspekAkibatKerja'] ?? null;
+        // Sync x-select suspekAkibatKerja ke property terpisah; fallback 'Tidak' utk record lama yg empty/null
+        $this->suspekAkibatKerja = ($this->dataDaftarPoliRJ['pemeriksaan']['suspekAkibatKerja']['suspekAkibatKerja'] ?? '') ?: 'Tidak';
 
         // 🔥 INCREMENT: Refresh seluruh modal pemeriksaan
         $this->incrementVersion('modal-pemeriksaan-rj');
@@ -138,9 +138,8 @@ new class extends Component {
                 ->toArray(),
 
             'suspekAkibatKerja' => [
-                'suspekAkibatKerja' => '',
+                'suspekAkibatKerja' => 'Tidak', // default — UI pakai x-select (Ya/Tidak)
                 'keteranganSuspekAkibatKerja' => '',
-                'suspekAkibatKerjaOptions' => [['suspekAkibatKerja' => 'Ya'], ['suspekAkibatKerja' => 'Tidak']],
             ],
 
             'FisikujiFungsi' => [
