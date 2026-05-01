@@ -5,7 +5,16 @@
         <x-border-form :title="__('Tambah Penilaian Dekubitus (Skala Braden)')" :align="__('start')" :bgcolor="__('bg-gray-50')">
             <div class="mt-4 space-y-4">
 
-                <div class="grid grid-cols-1 gap-4">
+                <div>
+                    <x-input-label value="Status Dekubitus" :required="true" />
+                    <x-select-input wire:model.live="formEntryDekubitus.dekubitus.dekubitus" class="w-full mt-1">
+                        <option value="Tidak">Tidak</option>
+                        <option value="Ya">Ya</option>
+                    </x-select-input>
+                    <x-input-error :messages="$errors->get('formEntryDekubitus.dekubitus.dekubitus')" class="mt-1" />
+                </div>
+
+                @if (($formEntryDekubitus['dekubitus']['dekubitus'] ?? '') === 'Ya')
                     <div>
                         <x-input-label value="Tanggal Penilaian" :required="true" />
                         <div class="flex gap-2 mt-1">
@@ -17,16 +26,7 @@
                         </div>
                         <x-input-error :messages="$errors->get('formEntryDekubitus.tglPenilaian')" class="mt-1" />
                     </div>
-
-                    <div>
-                        <x-input-label value="Status Dekubitus" :required="true" />
-                        <x-select-input wire:model.live="formEntryDekubitus.dekubitus.dekubitus" class="w-full mt-1">
-                            <option value="Tidak">Tidak</option>
-                            <option value="Ya">Ya</option>
-                        </x-select-input>
-                        <x-input-error :messages="$errors->get('formEntryDekubitus.dekubitus.dekubitus')" class="mt-1" />
-                    </div>
-                </div>
+                @endif
 
                 @if (($formEntryDekubitus['dekubitus']['dekubitus'] ?? '') === 'Ya')
 
@@ -74,13 +74,15 @@
 
                 @endif {{-- /if dekubitus = Ya --}}
 
-                <div class="flex justify-end pt-2">
-                    <x-primary-button wire:click="addAssessmentDekubitus" wire:loading.attr="disabled"
-                        wire:target="addAssessmentDekubitus">
-                        <span wire:loading.remove wire:target="addAssessmentDekubitus">Simpan Penilaian Dekubitus</span>
-                        <span wire:loading wire:target="addAssessmentDekubitus">Menyimpan...</span>
-                    </x-primary-button>
-                </div>
+                @if (($formEntryDekubitus['dekubitus']['dekubitus'] ?? '') === 'Ya')
+                    <div class="flex justify-end pt-2">
+                        <x-primary-button wire:click="addAssessmentDekubitus" wire:loading.attr="disabled"
+                            wire:target="addAssessmentDekubitus">
+                            <span wire:loading.remove wire:target="addAssessmentDekubitus">Simpan Penilaian Dekubitus</span>
+                            <span wire:loading wire:target="addAssessmentDekubitus">Menyimpan...</span>
+                        </x-primary-button>
+                    </div>
+                @endif
             </div>
         </x-border-form>
     @endif

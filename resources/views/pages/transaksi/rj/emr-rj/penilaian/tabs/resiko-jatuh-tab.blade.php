@@ -5,7 +5,17 @@
         <x-border-form :title="__('Tambah Penilaian Risiko Jatuh')" :align="__('start')" :bgcolor="__('bg-gray-50')">
             <div class="mt-4 space-y-4">
 
-                <div class="grid grid-cols-1 gap-4">
+                <div>
+                    <x-input-label value="Risiko Jatuh" :required="true" />
+                    <x-select-input wire:model.live="formEntryResikoJatuh.resikoJatuh.resikoJatuh"
+                        class="w-full mt-1">
+                        <option value="Tidak">Tidak</option>
+                        <option value="Ya">Ya</option>
+                    </x-select-input>
+                    <x-input-error :messages="$errors->get('formEntryResikoJatuh.resikoJatuh.resikoJatuh')" class="mt-1" />
+                </div>
+
+                @if ($formEntryResikoJatuh['resikoJatuh']['resikoJatuh'] === 'Ya')
                     <div>
                         <x-input-label value="Tanggal Penilaian" :required="true" />
                         <div class="flex gap-2 mt-1">
@@ -17,17 +27,7 @@
                         </div>
                         <x-input-error :messages="$errors->get('formEntryResikoJatuh.tglPenilaian')" class="mt-1" />
                     </div>
-
-                    <div>
-                        <x-input-label value="Risiko Jatuh" :required="true" />
-                        <x-select-input wire:model.live="formEntryResikoJatuh.resikoJatuh.resikoJatuh"
-                            class="w-full mt-1">
-                            <option value="Tidak">Tidak</option>
-                            <option value="Ya">Ya</option>
-                        </x-select-input>
-                        <x-input-error :messages="$errors->get('formEntryResikoJatuh.resikoJatuh.resikoJatuh')" class="mt-1" />
-                    </div>
-                </div>
+                @endif
 
                 @if ($formEntryResikoJatuh['resikoJatuh']['resikoJatuh'] === 'Ya')
                     <div>
@@ -139,14 +139,16 @@
                     </div>
                 @endif
 
-                <div class="flex justify-end pt-2">
-                    <x-primary-button wire:click="addAssessmentResikoJatuh" wire:loading.attr="disabled"
-                        wire:target="addAssessmentResikoJatuh">
-                        <span wire:loading.remove wire:target="addAssessmentResikoJatuh">Simpan Penilaian Risiko
-                            Jatuh</span>
-                        <span wire:loading wire:target="addAssessmentResikoJatuh">Menyimpan...</span>
-                    </x-primary-button>
-                </div>
+                @if ($formEntryResikoJatuh['resikoJatuh']['resikoJatuh'] === 'Ya')
+                    <div class="flex justify-end pt-2">
+                        <x-primary-button wire:click="addAssessmentResikoJatuh" wire:loading.attr="disabled"
+                            wire:target="addAssessmentResikoJatuh">
+                            <span wire:loading.remove wire:target="addAssessmentResikoJatuh">Simpan Penilaian Risiko
+                                Jatuh</span>
+                            <span wire:loading wire:target="addAssessmentResikoJatuh">Menyimpan...</span>
+                        </x-primary-button>
+                    </div>
+                @endif
             </div>
         </x-border-form>
     @endif
