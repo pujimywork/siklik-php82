@@ -597,11 +597,13 @@ new class extends Component {
     /**
      * Read decoded list dari ref_bpjs_table. Return null kalau row tidak ada
      * atau JSON invalid (caller harus fallback ke API).
+     * Lookup case-insensitive (siklik-lite convention) — toleran terhadap
+     * klinik existing yg casing-nya beda.
      */
     private function loadRefBpjsCache(string $refKey): ?array
     {
         $row = DB::table('ref_bpjs_table')
-            ->where('ref_keterangan', $refKey)
+            ->whereRaw('upper(ref_keterangan) = upper(?)', [$refKey])
             ->value('ref_json');
 
         if (!$row) return null;

@@ -42,14 +42,16 @@ new class extends Component {
 
     /* -------------------------
      | Tindak Lanjut options dari BPJS PCare cache (ref_bpjs_table).
-     | Pakai kategori 'StatusPulang' — di-sync via Master > Ref BPJS.
-     | Kalau cache kosong, return [] dan UI akan kasih hint untuk sync.
+     | Pakai kategori 'Status Pulang RJ' (siklik-lite convention) — di-sync
+     | via Master > Ref BPJS. Lookup case-insensitive supaya toleran terhadap
+     | klinik existing yg casing-nya beda (UPPERCASE/lowercase). Cache kosong
+     | → return [] dan UI kasih hint untuk sync.
      * ------------------------- */
     #[Computed]
     public function statusPulangOptions(): array
     {
         $json = DB::table('ref_bpjs_table')
-            ->where('ref_keterangan', 'StatusPulang')
+            ->whereRaw('upper(ref_keterangan) = upper(?)', ['Status Pulang RJ'])
             ->value('ref_json');
 
         if (!$json) return [];

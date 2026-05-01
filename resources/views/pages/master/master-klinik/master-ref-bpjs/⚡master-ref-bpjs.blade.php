@@ -15,18 +15,22 @@ new class extends Component {
      | response BPJS PCare yg jarang berubah, dipakai oleh LOV
      | (alergi, prognosa, dll) supaya nggak hit API tiap kali.
      * ------------------------- */
+    /*  Key naming = sama persis dengan siklik-lite (Title Case + suffix RJ/RI
+        untuk Status Pulang). Lookup di-pakai case-insensitive (upper(...) = upper(?))
+        supaya toleran terhadap variasi casing di klinik existing. */
     public array $categories = [
-        ['key' => 'Kesadaran',      'desc' => 'Daftar kode kesadaran (Compos Mentis, Apatis, dll).'],
-        ['key' => 'Spesialis',      'desc' => 'Daftar spesialisasi dokter BPJS.'],
-        ['key' => 'Prognosa',       'desc' => 'Kode prognosa pasien (Sanam, Bonam, dll).'],
-        ['key' => 'PoliFktp',       'desc' => 'Daftar poli BPJS untuk klinik pratama (FKTP).'],
-        ['key' => 'StatusPulang',   'desc' => 'Kode status pulang pasien (Berobat Jalan, Rujuk, dll).'],
-        ['key' => 'Sarana',         'desc' => 'Sarana penunjang BPJS.'],
-        ['key' => 'Alergi Makanan', 'desc' => 'Daftar referensi alergi makanan BPJS.'],
-        ['key' => 'Alergi Udara',   'desc' => 'Daftar referensi alergi udara BPJS.'],
-        ['key' => 'Alergi Obat',    'desc' => 'Daftar referensi alergi obat BPJS.'],
-        ['key' => 'Dokter',         'desc' => 'Master dokter terdaftar di BPJS PCare.'],
-        ['key' => 'Provider',       'desc' => 'Daftar faskes provider rayonisasi.'],
+        ['key' => 'Kesadaran',        'desc' => 'Daftar kode kesadaran (Compos Mentis, Apatis, dll).'],
+        ['key' => 'Spesialis',        'desc' => 'Daftar spesialisasi dokter BPJS.'],
+        ['key' => 'Prognosa',         'desc' => 'Kode prognosa pasien (Sanam, Bonam, dll).'],
+        ['key' => 'PoliFktp',         'desc' => 'Daftar poli BPJS untuk klinik pratama (FKTP).'],
+        ['key' => 'Status Pulang RJ', 'desc' => 'Kode status pulang pasien rawat jalan (Berobat Jalan, Rujuk, dll).'],
+        ['key' => 'Status Pulang RI', 'desc' => 'Kode status pulang pasien rawat inap (Sembuh, Meninggal, Rujuk, dll).'],
+        ['key' => 'Sarana',           'desc' => 'Sarana penunjang BPJS.'],
+        ['key' => 'Alergi Makanan',   'desc' => 'Daftar referensi alergi makanan BPJS.'],
+        ['key' => 'Alergi Udara',     'desc' => 'Daftar referensi alergi udara BPJS.'],
+        ['key' => 'Alergi Obat',      'desc' => 'Daftar referensi alergi obat BPJS.'],
+        ['key' => 'Dokter',           'desc' => 'Master dokter terdaftar di BPJS PCare.'],
+        ['key' => 'Provider',         'desc' => 'Daftar faskes provider rayonisasi.'],
     ];
 
     /* -------------------------
@@ -50,7 +54,8 @@ new class extends Component {
 
             $jsonNew = json_encode($list, true);
             $jsonOld = (string) (DB::table('ref_bpjs_table')
-                ->where('ref_keterangan', $key)->value('ref_json') ?? '');
+                ->whereRaw('upper(ref_keterangan) = upper(?)', [$key])
+                ->value('ref_json') ?? '');
 
             if ($jsonNew === $jsonOld) {
                 $this->dispatch('toast', type: 'info',
@@ -61,8 +66,12 @@ new class extends Component {
 
             // Schema siklik (existing): ref_keterangan PK + ref_json CLOB.
             // Pola siklik-lite: delete-then-insert (lebih aman utk Oracle CLOB
-            // update lewat Eloquent).
-            DB::table('ref_bpjs_table')->where('ref_keterangan', $key)->delete();
+            // update lewat Eloquent). Pakai case-insensitive delete supaya
+            // klinik existing dengan casing variasi (UPPERCASE/lowercase) ke-clean,
+            // lalu insert ulang dgn key Title Case dari $categories.
+            DB::table('ref_bpjs_table')
+                ->whereRaw('upper(ref_keterangan) = upper(?)', [$key])
+                ->delete();
             DB::table('ref_bpjs_table')->insert([
                 'ref_keterangan' => $key,
                 'ref_json'       => $jsonNew,
@@ -80,22 +89,25 @@ new class extends Component {
         }
     }
 
-    /* Mapping label → call PcareTrait. Return list (array) atau null kalau key tdk dikenal. */
+    /* Mapping label → call PcareTrait. Return list (array) atau null kalau key tdk dikenal.
+       Status Pulang split RJ vs RI (siklik-lite convention) — getStatusPulang('0') untuk RJ,
+       getStatusPulang('1') untuk RI. */
     private function fetchListByKey(string $key): ?array
     {
         $resp = match ($key) {
-            'Kesadaran'      => $this->getKesadaran()->getOriginalContent(),
-            'Spesialis'      => $this->getSpesialis()->getOriginalContent(),
-            'Prognosa'       => $this->getPrognosa()->getOriginalContent(),
-            'PoliFktp'       => $this->getPoliFktp(0, 100)->getOriginalContent(),
-            'StatusPulang'   => $this->getStatusPulang('0')->getOriginalContent(),
-            'Sarana'         => $this->getSarana()->getOriginalContent(),
-            'Alergi Makanan' => $this->getAlergi('01')->getOriginalContent(),
-            'Alergi Udara'   => $this->getAlergi('02')->getOriginalContent(),
-            'Alergi Obat'    => $this->getAlergi('03')->getOriginalContent(),
-            'Dokter'         => $this->getDokter(0, 200)->getOriginalContent(),
-            'Provider'       => $this->getProviderRayonisasi(0, 100)->getOriginalContent(),
-            default          => null,
+            'Kesadaran'        => $this->getKesadaran()->getOriginalContent(),
+            'Spesialis'        => $this->getSpesialis()->getOriginalContent(),
+            'Prognosa'         => $this->getPrognosa()->getOriginalContent(),
+            'PoliFktp'         => $this->getPoliFktp(0, 100)->getOriginalContent(),
+            'Status Pulang RJ' => $this->getStatusPulang('0')->getOriginalContent(),
+            'Status Pulang RI' => $this->getStatusPulang('1')->getOriginalContent(),
+            'Sarana'           => $this->getSarana()->getOriginalContent(),
+            'Alergi Makanan'   => $this->getAlergi('01')->getOriginalContent(),
+            'Alergi Udara'     => $this->getAlergi('02')->getOriginalContent(),
+            'Alergi Obat'      => $this->getAlergi('03')->getOriginalContent(),
+            'Dokter'           => $this->getDokter(0, 200)->getOriginalContent(),
+            'Provider'         => $this->getProviderRayonisasi(0, 100)->getOriginalContent(),
+            default            => null,
         };
         if ($resp === null) return null;
 
@@ -114,14 +126,16 @@ new class extends Component {
     #[Computed]
     public function refRows(): array
     {
+        // KeyBy uppercase → toleran terhadap casing variasi di klinik existing
+        // (e.g. 'STATUS PULANG RJ' uppercase dari siklik-lite vs 'Status Pulang RJ' Title Case).
         $rows = DB::table('ref_bpjs_table')
             ->select('ref_keterangan', 'ref_json')
             ->get()
-            ->keyBy('ref_keterangan');
+            ->keyBy(fn($r) => strtoupper($r->ref_keterangan));
 
         $out = [];
         foreach ($this->categories as $cat) {
-            $row = $rows->get($cat['key']);
+            $row = $rows->get(strtoupper($cat['key']));
             $items = [];
             if ($row && $row->ref_json) {
                 $decoded = json_decode($row->ref_json, true);
