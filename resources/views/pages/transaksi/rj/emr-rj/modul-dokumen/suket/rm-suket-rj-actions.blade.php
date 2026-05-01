@@ -240,7 +240,7 @@ new class extends Component {
                                     {{-- SUKET SEHAT TAB --}}
                                     <li class="mr-2">
                                         <label
-                                            class="inline-block px-4 py-2 border-b-2 border-transparent rounded-t-lg cursor-pointer hover:text-gray-600 hover:border-gray-300"
+                                            class="inline-block px-3 py-1.5 border-b-2 border-transparent rounded-t-lg cursor-pointer hover:text-gray-600 hover:border-gray-300"
                                             :class="activeTab === '{{ $dataDaftarPoliRJ['suket']['suketSehatTab'] ?? 'Suket Sehat' }}'
                                                 ?
                                                 'text-primary border-primary bg-gray-100' : ''"
@@ -252,7 +252,7 @@ new class extends Component {
                                     {{-- SUKET ISTIRAHAT TAB --}}
                                     <li class="mr-2">
                                         <label
-                                            class="inline-block px-4 py-2 border-b-2 border-transparent rounded-t-lg cursor-pointer hover:text-gray-600 hover:border-gray-300"
+                                            class="inline-block px-3 py-1.5 border-b-2 border-transparent rounded-t-lg cursor-pointer hover:text-gray-600 hover:border-gray-300"
                                             :class="activeTab === '{{ $dataDaftarPoliRJ['suket']['suketIstirahatTab'] ?? 'Suket Istirahat' }}'
                                                 ?
                                                 'text-primary border-primary bg-gray-100' : ''"
@@ -265,7 +265,7 @@ new class extends Component {
                             </div>
 
                             {{-- TAB CONTENTS --}}
-                            <div class="w-full p-4">
+                            <div class="w-full p-2">
 
                                 {{-- SUKET SEHAT TAB CONTENT --}}
                                 @if (isset($dataDaftarPoliRJ['suket']['suketSehatTab']))

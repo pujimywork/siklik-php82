@@ -754,7 +754,7 @@ new class extends Component {
                             @foreach (['Nyeri' => 'Nyeri', 'Risiko Jatuh' => 'Risiko Jatuh', 'Dekubitus' => 'Dekubitus', 'Gizi' => 'Gizi'] as $tab => $label)
                                 <li class="mr-2">
                                     <label
-                                        class="inline-block px-4 py-2 border-b-2 border-transparent rounded-t-lg cursor-pointer hover:text-gray-600 hover:border-gray-300"
+                                        class="inline-block px-3 py-1.5 border-b-2 border-transparent rounded-t-lg cursor-pointer hover:text-gray-600 hover:border-gray-300"
                                         :class="activeTab === '{{ $tab }}' ?
                                             'text-primary border-primary bg-gray-100' : ''"
                                         @click="activeTab = '{{ $tab }}'">
@@ -766,7 +766,7 @@ new class extends Component {
                     </div>
 
                     {{-- TAB CONTENTS --}}
-                    <div class="w-full p-4">
+                    <div class="w-full p-2">
 
                         <div class="w-full" x-show.transition.in.opacity.duration.600="activeTab === 'Nyeri'">
                             @include('pages.transaksi.rj.emr-rj.penilaian.tabs.nyeri-tab')
