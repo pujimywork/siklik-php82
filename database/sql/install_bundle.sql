@@ -318,51 +318,44 @@ BEGIN
 END;
 /
 
--- DROP & CREATE TKTXN_SOWHS (idempotent: drop dulu kalau ada)
+-- TKTXN_SOWHS — create kalau belum ada. Kalau sudah ada, SKIP (preserve data opname).
+-- View di-recreate selalu (lihat di bawah) — grants ke DITOKOKU ter-preserve.
 DECLARE
     v_count NUMBER;
 BEGIN
     SELECT COUNT(*) INTO v_count FROM USER_TABLES WHERE TABLE_NAME = 'TKTXN_SOWHS';
-    IF v_count > 0 THEN
-        EXECUTE IMMEDIATE 'DROP TABLE TKTXN_SOWHS CASCADE CONSTRAINTS';
-        DBMS_OUTPUT.PUT_LINE('  ⚠ TKTXN_SOWHS lama di-drop.');
+    IF v_count = 0 THEN
+        EXECUTE IMMEDIATE q'[
+            CREATE TABLE TKTXN_SOWHS (
+                SO_NO       NUMBER          NOT NULL,
+                PRODUCT_ID  VARCHAR2(20)    NOT NULL,
+                SO_DATE     DATE            DEFAULT SYSDATE,
+                SO_D        NUMBER          DEFAULT 0,
+                SO_K        NUMBER          DEFAULT 0,
+                KASIR_ID    VARCHAR2(20),
+                SO_DESC     VARCHAR2(100)   DEFAULT 'SO',
+                CONSTRAINT PK_TKTXN_SOWHS PRIMARY KEY (SO_NO)
+            )
+        ]';
+        EXECUTE IMMEDIATE 'ALTER TABLE TKTXN_SOWHS ADD CONSTRAINT FK_TKTXN_SOWHS_PRODUCT FOREIGN KEY (PRODUCT_ID) REFERENCES TKMST_PRODUCTS(PRODUCT_ID)';
+        EXECUTE IMMEDIATE 'ALTER TABLE TKTXN_SOWHS ADD CONSTRAINT FK_TKTXN_SOWHS_KASIR   FOREIGN KEY (KASIR_ID)   REFERENCES TKMST_KASIRS(KASIR_ID)';
+        EXECUTE IMMEDIATE 'CREATE INDEX IDX_TKTXN_SOWHS_PRODUCT_DATE ON TKTXN_SOWHS(PRODUCT_ID, SO_DATE)';
+        EXECUTE IMMEDIATE q'[COMMENT ON TABLE  TKTXN_SOWHS            IS 'Stock Opname Warehouse — catat selisih hasil opname per produk. INSERT-only.']';
+        EXECUTE IMMEDIATE q'[COMMENT ON COLUMN TKTXN_SOWHS.SO_NO      IS 'PK auto-increment via NVL(MAX(so_no),0)+1 di app']';
+        EXECUTE IMMEDIATE q'[COMMENT ON COLUMN TKTXN_SOWHS.PRODUCT_ID IS 'FK → TKMST_PRODUCTS']';
+        EXECUTE IMMEDIATE q'[COMMENT ON COLUMN TKTXN_SOWHS.SO_DATE    IS 'Tanggal opname (default SYSDATE)']';
+        EXECUTE IMMEDIATE q'[COMMENT ON COLUMN TKTXN_SOWHS.SO_D       IS 'Debit/Masuk — fisik LEBIH dari catatan']';
+        EXECUTE IMMEDIATE q'[COMMENT ON COLUMN TKTXN_SOWHS.SO_K       IS 'Kredit/Keluar — fisik KURANG dari catatan']';
+        EXECUTE IMMEDIATE q'[COMMENT ON COLUMN TKTXN_SOWHS.KASIR_ID   IS 'FK → TKMST_KASIRS']';
+        EXECUTE IMMEDIATE q'[COMMENT ON COLUMN TKTXN_SOWHS.SO_DESC    IS 'Default ''SO''']';
+        DBMS_OUTPUT.PUT_LINE('  ✓ TKTXN_SOWHS created (table + 2 FK + index + comments).');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('  ⚠ TKTXN_SOWHS already exists — skip table create (data preserved).');
     END IF;
 END;
 /
 
-CREATE TABLE TKTXN_SOWHS (
-    SO_NO       NUMBER          NOT NULL,
-    PRODUCT_ID  VARCHAR2(20)    NOT NULL,
-    SO_DATE     DATE            DEFAULT SYSDATE,
-    SO_D        NUMBER          DEFAULT 0,
-    SO_K        NUMBER          DEFAULT 0,
-    KASIR_ID    VARCHAR2(20),
-    SO_DESC     VARCHAR2(100)   DEFAULT 'SO',
-    CONSTRAINT PK_TKTXN_SOWHS PRIMARY KEY (SO_NO)
-);
-
-ALTER TABLE TKTXN_SOWHS
-    ADD CONSTRAINT FK_TKTXN_SOWHS_PRODUCT
-    FOREIGN KEY (PRODUCT_ID) REFERENCES TKMST_PRODUCTS(PRODUCT_ID);
-
-ALTER TABLE TKTXN_SOWHS
-    ADD CONSTRAINT FK_TKTXN_SOWHS_KASIR
-    FOREIGN KEY (KASIR_ID) REFERENCES TKMST_KASIRS(KASIR_ID);
-
-CREATE INDEX IDX_TKTXN_SOWHS_PRODUCT_DATE
-    ON TKTXN_SOWHS(PRODUCT_ID, SO_DATE);
-
-COMMENT ON TABLE  TKTXN_SOWHS IS
-    'Stock Opname Warehouse — catat selisih hasil opname per produk. INSERT-only.';
-COMMENT ON COLUMN TKTXN_SOWHS.SO_NO      IS 'PK auto-increment via NVL(MAX(so_no),0)+1 di app';
-COMMENT ON COLUMN TKTXN_SOWHS.PRODUCT_ID IS 'FK → TKMST_PRODUCTS';
-COMMENT ON COLUMN TKTXN_SOWHS.SO_DATE    IS 'Tanggal opname (default SYSDATE)';
-COMMENT ON COLUMN TKTXN_SOWHS.SO_D       IS 'Debit/Masuk — fisik LEBIH dari catatan';
-COMMENT ON COLUMN TKTXN_SOWHS.SO_K       IS 'Kredit/Keluar — fisik KURANG dari catatan';
-COMMENT ON COLUMN TKTXN_SOWHS.KASIR_ID   IS 'FK → TKMST_KASIRS';
-COMMENT ON COLUMN TKTXN_SOWHS.SO_DESC    IS 'Default ''SO''';
-
--- View (CREATE OR REPLACE = idempotent native)
+-- View (CREATE OR REPLACE = idempotent native, grants ke DITOKOKU ter-preserve)
 CREATE OR REPLACE FORCE VIEW TKVIEW_IOSTOCKWHS
     ("PRODUCT_ID", "TXN_STATUS", "QTY_D", "QTY_K", "TXN_DATE", "TXN_NO", "PRODUCT_NAME") AS
 (
