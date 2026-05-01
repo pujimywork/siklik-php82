@@ -28,6 +28,7 @@ SET FEEDBACK ON;
 SET ECHO OFF;
 SET LINESIZE 200;
 SET PAGESIZE 100;
+SET SQLBLANKLINES ON;
 
 PROMPT
 PROMPT ╔════════════════════════════════════════════════════════════╗
