@@ -91,10 +91,10 @@ new class extends Component {
     /** Generate regNo baru saat simpan (tidak bisa diinput manual) */
     protected function generateRegNo(): string
     {
-        $maxRegNo = DB::table('rsmst_pasiens')->whereRaw("reg_no LIKE '%Z'")->whereRaw("REGEXP_LIKE(REPLACE(reg_no,'Z',''), '^\d+$')")->max(DB::raw("TO_NUMBER(REPLACE(reg_no,'Z',''))"));
+        $maxRegNo = DB::table('rsmst_pasiens')->whereRaw("reg_no LIKE '%A'")->whereRaw("REGEXP_LIKE(REPLACE(reg_no,'A',''), '^\d+$')")->max(DB::raw("TO_NUMBER(REPLACE(reg_no,'A',''))"));
 
         $nextNo = ($maxRegNo ?? 0) + 1;
-        return sprintf('%07s', $nextNo) . 'Z';
+        return sprintf('%07s', $nextNo) . 'A';
     }
 
     #[On('master.pasien.openEdit')]
@@ -281,11 +281,14 @@ new class extends Component {
                         'sex' => ($pasien['jenisKelamin']['jenisKelaminId'] ?? 0) == 1 ? 'L' : 'P',
                         'birth_date' => !empty($pasien['tglLahir']) ? DB::raw("to_date('{$pasien['tglLahir']}', 'dd/mm/yyyy')") : null,
                         'birth_place' => strtoupper($pasien['tempatLahir'] ?? ''),
+                        'thn' => $pasien['thn'] ?? null,
+                        'bln' => $pasien['bln'] ?? null,
+                        'hari' => $pasien['hari'] ?? null,
                         'nik_bpjs' => $identitas['nik'] ?? null,
                         'nokartu_bpjs' => $identitas['idbpjs'] ?? null,
                         'patient_uuid' => $identitas['patientUuid'] ?? null,
                         'blood' => $pasien['golonganDarah']['golonganDarahId'] ?? null,
-                        'marital_status' => ($pasien['statusPerkawinan']['statusPerkawinanId'] ?? 1) == 1 ? 'S' : (($pasien['statusPerkawinan']['statusPerkawinanId'] ?? 1) == 2 ? 'M' : (($pasien['statusPerkawinan']['statusPerkawinanId'] ?? 1) == 3 ? 'D' : 'W')),
+                        'marital_status' => $pasien['statusPerkawinan']['statusPerkawinanId'] ?? null,
                         'rel_id' => $pasien['agama']['agamaId'] ?? '1',
                         'edu_id' => $pasien['pendidikan']['pendidikanId'] ?? '3',
                         'job_id' => $pasien['pekerjaan']['pekerjaanId'] ?? '4',
