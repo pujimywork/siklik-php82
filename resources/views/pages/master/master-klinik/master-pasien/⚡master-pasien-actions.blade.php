@@ -888,30 +888,30 @@ new class extends Component {
                                         @endif
 
                                         {{-- DATA DASAR PASIEN --}}
-                                        @include('pages.master.master-pasien.master-pasien-actions-data-dasar-pasien')
+                                        @include('pages.master.master-klinik.master-pasien.master-pasien-actions-data-dasar-pasien')
 
                                         {{-- DATA SOSIAL --}}
-                                        @include('pages.master.master-pasien.master-pasien-actions-data-sosial')
+                                        @include('pages.master.master-klinik.master-pasien.master-pasien-actions-data-sosial')
 
                                         {{-- DATA BUDAYA --}}
-                                        @include('pages.master.master-pasien.master-pasien-actions-data-budaya')
+                                        @include('pages.master.master-klinik.master-pasien.master-pasien-actions-data-budaya')
 
                                         {{-- IDENTITAS --}}
-                                        @include('pages.master.master-pasien.master-pasien-actions-identitas')
+                                        @include('pages.master.master-klinik.master-pasien.master-pasien-actions-identitas')
 
                                         <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                             {{-- ALAMAT IDENTITAS --}}
-                                            @include('pages.master.master-pasien.master-pasien-actions-alamat-identitas')
+                                            @include('pages.master.master-klinik.master-pasien.master-pasien-actions-alamat-identitas')
 
                                             {{-- ALAMAT DOMISILI --}}
-                                            @include('pages.master.master-pasien.master-pasien-actions-alamat-domisili')
+                                            @include('pages.master.master-klinik.master-pasien.master-pasien-actions-alamat-domisili')
                                         </div>
 
                                         {{-- KONTAK --}}
-                                        @include('pages.master.master-pasien.master-pasien-actions-kontak')
+                                        @include('pages.master.master-klinik.master-pasien.master-pasien-actions-kontak')
 
                                         {{-- HUBUNGAN KELUARGA --}}
-                                        @include('pages.master.master-pasien.master-pasien-actions-hubungan-keluarga')
+                                        @include('pages.master.master-klinik.master-pasien.master-pasien-actions-hubungan-keluarga')
 
                                     </div>
                                 </div>
@@ -923,7 +923,7 @@ new class extends Component {
             </div>
 
             {{-- FOOTER --}}
-            @include('pages.master.master-pasien.master-pasien-actions-footer')
+            @include('pages.master.master-klinik.master-pasien.master-pasien-actions-footer')
 
         </div>
     </x-modal>
