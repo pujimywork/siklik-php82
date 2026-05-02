@@ -129,12 +129,6 @@ new class extends Component {
                         <a href="{{ route('rawat-jalan.daftar') }}" wire:navigate>
                             <x-outline-button type="button">Pendaftaran Rawat Jalan</x-outline-button>
                         </a>
-                        <a href="{{ route('ugd.daftar') }}" wire:navigate>
-                            <x-outline-button type="button">Pendaftaran UGD</x-outline-button>
-                        </a>
-                        <a href="{{ route('ri.daftar') }}" wire:navigate>
-                            <x-outline-button type="button">Pendaftaran Rawat Inap</x-outline-button>
-                        </a>
 
                         <div class="w-28">
                             <x-input-label for="itemsPerPage" value="Per halaman" class="sr-only" />
